@@ -53,6 +53,14 @@ AdminTest::doExecute( Context& txt )
             return PA_USAGE;
     }
 
+    const int enhLevel = Enh_AdminLevel(txt._client->slot);
+    const char *enhName = Enh_LevelName(enhLevel);
+    buf << '\n' << "^5enhmod: ^7" << xvalue(txt._user.namex) << " is a ";
+    if (enhName && enhName[0])
+        buf << xvalue(enhName) << " (level " << xvalue(enhLevel) << ").";
+    else
+        buf << "level " << xvalue(enhLevel) << " admin.";
+
     printCpm( txt._client, buf, broadcast );
     return PA_NONE;
 }

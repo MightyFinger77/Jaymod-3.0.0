@@ -229,6 +229,7 @@ extern itemDef_t* g_bindItem;
 
 void _UI_Init( qboolean );
 void _UI_Shutdown( void );
+static void UI_SetupFixedAspect( void );
 void _UI_KeyEvent( int key, qboolean down );
 void _UI_MouseEvent( int dx, int dy );
 void _UI_Refresh( int realtime );
@@ -941,6 +942,38 @@ void UI_DrawCenteredPic(qhandle_t image, int w, int h) {
 int frameCount = 0;
 int startTime;
 
+int UI_GetScreenWidth(void)
+{
+	char fa[16];
+
+	if (uiInfo.uiDC.screenWidth < 640)
+		return 640;
+	trap_Cvar_VariableStringBuffer("jay_fixedAspect", fa, sizeof(fa));
+	if (fa[0] == '0' && fa[1] == '\0')
+		return 640;
+	return uiInfo.uiDC.screenWidth;
+}
+
+static void UI_SetupFixedAspect( void )
+{
+	int width;
+
+	// ETJump: wide virtual width, uniform scale. 640 menus are centered
+	// with SCREEN_X_OFFSET instead of being stretched to 16:9.
+	uiInfo.uiDC.yscale = uiInfo.uiDC.glconfig.vidHeight * (1.0 / 480.0);
+	width = (int)(uiInfo.uiDC.glconfig.vidWidth * 480.0f / uiInfo.uiDC.glconfig.vidHeight);
+	if (width % 2 == 1)
+		width++;
+	if (width < 640)
+		width = 640;
+	uiInfo.uiDC.screenWidth = width;
+	if (UI_GetScreenWidth() == 640)
+		uiInfo.uiDC.xscale = uiInfo.uiDC.glconfig.vidWidth * (1.0 / 640.0);
+	else
+		uiInfo.uiDC.xscale = uiInfo.uiDC.glconfig.vidWidth / (float)width;
+	uiInfo.uiDC.bias = 0;
+}
+
 #define	UI_FPS_FRAMES	4
 void _UI_Refresh( int realtime )
 {
@@ -970,6 +1003,7 @@ void _UI_Refresh( int realtime )
 	}
 
 	UI_UpdateCvars();
+	UI_SetupFixedAspect();
 
 	if( trap_Cvar_VariableValue( "ui_connecting" ) ) {
 		UI_DrawLoadPanel( qtrue, qfalse, qtrue );
@@ -7428,17 +7462,7 @@ void _UI_Init( qboolean inGameLoad ) {
 
 	UI_ParseGLConfig();
 
-	// for 640x480 virtualized screen
-	uiInfo.uiDC.yscale = uiInfo.uiDC.glconfig.vidHeight * (1.0/480.0);
-	uiInfo.uiDC.xscale = uiInfo.uiDC.glconfig.vidWidth * (1.0/640.0);
-	if ( uiInfo.uiDC.glconfig.vidWidth * 480 > uiInfo.uiDC.glconfig.vidHeight * 640 ) {
-		// wide screen
-		uiInfo.uiDC.bias = 0.5 * ( uiInfo.uiDC.glconfig.vidWidth - ( uiInfo.uiDC.glconfig.vidHeight * (640.0/480.0) ) );
-	}
-	else {
-		// no wide screen
-		uiInfo.uiDC.bias = 0;
-	}
+	UI_SetupFixedAspect();
 
 
   //UI_Load();
@@ -8019,6 +8043,8 @@ to prevent it from blinking away too rapidly on local or lan games.
 void UI_DrawConnectScreen( qboolean overlay ) {
 //	static qboolean playingMusic = qfalse;
 
+	UI_SetupFixedAspect();
+
 	if( !overlay ) {
 		UI_DrawLoadPanel( qfalse, qfalse, qfalse );
 	} else {
@@ -8312,8 +8338,12 @@ vmCvar_t	cl_bypassMouseInput;
 
 //bani
 vmCvar_t	ui_autoredirect;
+vmCvar_t	cg_fixedAspect;
+vmCvar_t	jay_fixedAspect;
 
 cvarTable_t		cvarTable[] = {
+	{ &cg_fixedAspect, "cg_fixedAspect", "1", CVAR_ARCHIVE },
+	{ &jay_fixedAspect, "jay_fixedAspect", "1", CVAR_ARCHIVE },
 
 	{ &ui_glCustom, "ui_glCustom", "4", CVAR_ARCHIVE }, // JPW NERVE missing from q3ta
 	{ &ui_ffa_fraglimit, "ui_ffa_fraglimit", "20", CVAR_ARCHIVE },

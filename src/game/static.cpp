@@ -116,6 +116,16 @@ namespace objects {
     Cvar sv_tempBanMessage( "sv_tempBanMessage", "", CVAR_ROM );
 
     Cvar g_test( "g_test", "0", 0, NULL );  // TODO: nuke when done with scale testing
+
+    // EnhMod 1.0.9d names (readme.txt). g_adrenenalinecls is the published spelling.
+    Cvar g_em_votemap       ( "g_em_votemap",       "0",  CVAR_ARCHIVE, NULL );
+    Cvar g_adrenenalinecls  ( "g_adrenenalinecls",  "2",  CVAR_ARCHIVE, NULL );
+    Cvar g_drawAttackerHP   ( "g_drawAttackerHP",   "0",  CVAR_ARCHIVE, NULL );
+    Cvar g_countryflags     ( "g_countryflags",     "0",  CVAR_ARCHIVE, NULL );
+    Cvar g_flagsbehaviour   ( "g_flagsbehaviour",   "",   CVAR_ARCHIVE, NULL );
+    Cvar g_rifleWar         ( "g_rifleWar",         "0",  CVAR_JAYMODINFO, NULL );
+    Cvar g_pistolWar        ( "g_pistolWar",        "0",  CVAR_JAYMODINFO, NULL );
+    Cvar g_pumpgunWar       ( "g_pumpgunWar",       "0",  CVAR_JAYMODINFO, NULL );
 } // namespace objects
 
 ///////////////////////////////////////////////////////////////////////////////

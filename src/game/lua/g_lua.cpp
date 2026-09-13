@@ -122,6 +122,44 @@ static qboolean G_Lua_StartVM( lua_vm_t *vm ) {
     return qtrue;
 }
 
+int G_Lua_et_IPCSend( lua_State *L ) {
+    lua_vm_t *from = NULL;
+    lua_vm_t *to;
+    int slot;
+    const char *msg;
+    int i;
+
+    slot = luaL_checkint( L, 1 );
+    msg = luaL_checkstring( L, 2 );
+    for ( i = 0; i < LUA_NUM_VM; i++ ) {
+        if ( lVM[i] && lVM[i]->L == L ) {
+            from = lVM[i];
+            break;
+        }
+    }
+    if ( !from || slot < 0 || slot >= LUA_NUM_VM || !lVM[slot] ) {
+        lua_pushinteger( L, 0 );
+        return 1;
+    }
+    to = lVM[slot];
+    lua_getglobal( to->L, "et_IPCReceive" );
+    if ( !lua_isfunction( to->L, -1 ) ) {
+        lua_pop( to->L, 1 );
+        lua_pushinteger( L, 0 );
+        return 1;
+    }
+    lua_pushinteger( to->L, from->id );
+    lua_pushstring( to->L, msg );
+    if ( lua_pcall( to->L, 2, 0, 0 ) != 0 ) {
+        G_Printf( "Lua: %s et_IPCReceive: %s\n", to->file_name, lua_tostring( to->L, -1 ) );
+        lua_pop( to->L, 1 );
+        lua_pushinteger( L, 0 );
+        return 1;
+    }
+    lua_pushinteger( L, 1 );
+    return 1;
+}
+
 static qboolean G_LuaCall( lua_vm_t *vm, const char *func, int nargs, int nresults ) {
     int err;
 
@@ -446,6 +484,29 @@ void G_LuaHook_Damage( int target, int attacker, int damage, int dflags, int mod
         lua_pushinteger( lVM[i]->L, dflags );
         lua_pushinteger( lVM[i]->L, mod );
         G_LuaCall( lVM[i], "et_Damage", 5, 0 );
+    }
+}
+
+void G_LuaHook_ClientThink( int clientNum ) {
+    int i;
+    for ( i = 0; i < LUA_NUM_VM; i++ ) {
+        if ( !lVM[i] || !G_LuaGetNamedFunction( lVM[i], "et_ClientThink" ) ) {
+            continue;
+        }
+        lua_pushinteger( lVM[i]->L, clientNum );
+        G_LuaCall( lVM[i], "et_ClientThink", 1, 0 );
+    }
+}
+
+void G_LuaHook_WeaponFire( int clientNum, int weapon ) {
+    int i;
+    for ( i = 0; i < LUA_NUM_VM; i++ ) {
+        if ( !lVM[i] || !G_LuaGetNamedFunction( lVM[i], "et_WeaponFire" ) ) {
+            continue;
+        }
+        lua_pushinteger( lVM[i]->L, clientNum );
+        lua_pushinteger( lVM[i]->L, weapon );
+        G_LuaCall( lVM[i], "et_WeaponFire", 2, 0 );
     }
 }
 

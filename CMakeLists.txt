@@ -4,21 +4,25 @@ project(jaymod LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 98)
 set(CMAKE_C_STANDARD 99)
 
-if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-    message(FATAL_ERROR "This CMake build targets 64-bit ET: Legacy only. Use -A x64 (MSVC) or a 64-bit toolchain.")
-endif()
-
 string(TIMESTAMP JAYMOD_BUILD_DATE "%a %b %d %H:%M:%S UTC %Y" UTC)
 
 if(WIN32)
     set(JAYMOD_PLATFORM_NAME "Windows")
     set(JAYMOD_PLATFORM_NAMEF "windows")
     set(JAYMOD_PLATFORM_DEFINE "WINDOWS")
-    set(JAYMOD_BUILD_TARGET "windows-x64")
-    set(QAGAME_OUTPUT_NAME "qagame_mp_x64")
-    set(CGAME_OUTPUT_NAME "cgame_mp_x64")
-    set(UI_OUTPUT_NAME "ui_mp_x64")
-    set(JAYMOD_ALT_ARCH "x86_64")
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(JAYMOD_BUILD_TARGET "windows-x64")
+        set(QAGAME_OUTPUT_NAME "qagame_mp_x64")
+        set(CGAME_OUTPUT_NAME "cgame_mp_x64")
+        set(UI_OUTPUT_NAME "ui_mp_x64")
+        set(JAYMOD_ALT_ARCH "x86_64")
+    else()
+        set(JAYMOD_BUILD_TARGET "windows-x86")
+        set(QAGAME_OUTPUT_NAME "qagame_mp_x86")
+        set(CGAME_OUTPUT_NAME "cgame_mp_x86")
+        set(UI_OUTPUT_NAME "ui_mp_x86")
+        set(JAYMOD_ALT_ARCH "")
+    endif()
 else()
     set(JAYMOD_PLATFORM_NAME "Linux")
     set(JAYMOD_PLATFORM_NAMEF "linux")
@@ -75,6 +79,7 @@ file(GLOB GAME_SRCS
     src/game/cvar/*.cpp
     src/game/str/*.cpp
     src/game/lua/*.cpp
+    src/game/enh/*.cpp
 )
 
 file(GLOB BGAME_SRCS

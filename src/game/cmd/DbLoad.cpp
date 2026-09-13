@@ -26,6 +26,7 @@ DbLoad::doExecute( Context& txt )
         return PA_USAGE;
 
     G_DbLoad();
+    Enh_Reload();
 
     Buffer buf;
     buf << "loaded: " << xvalue( int(levelDB.mapLEVEL.size()) ) << " level records"

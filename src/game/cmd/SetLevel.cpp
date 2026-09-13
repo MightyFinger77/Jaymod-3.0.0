@@ -50,6 +50,7 @@ SetLevel::doExecute( Context& txt )
     }
 
     targetUser.authLevel = lev.level;
+    Enh_SetAdminLevel(target->slot, lev.level);
 
     // Report success
     Buffer buf;

@@ -155,7 +155,7 @@ int WM_DrawObjectives( int x, int y, int width, float fade ) {
 				seconds -= tens * 10;
 
 				s = va( "%s %2.0f:%i%i", CG_TranslateString( "REINFORCE TIME:" ), (float)mins, tens, seconds );
-				CG_Text_Paint_Ext( 640 - 20 - CG_Text_Width_Ext( s, 0.25f, 0, &cgs.media.limboFont1 ), y + 13, 0.25f, 0.25f, tclr, s, 0, 0, 0, &cgs.media.limboFont1 );
+				CG_Text_Paint_Ext( SCREEN_X_OFFSET + 640 - 20 - CG_Text_Width_Ext( s, 0.25f, 0, &cgs.media.limboFont1 ), y + 13, 0.25f, 0.25f, tclr, s, 0, 0, 0, &cgs.media.limboFont1 );
 			}
 		}
 
@@ -314,7 +314,7 @@ static void WM_DrawClientScore( int x, int y, score_t *score, float *color, floa
 	// CHRUKER: b032 - Medals clipped wrong in scoreboard when you're dead, because CG_DrawStringExt will draw
 	// everything if maxchars <= 0
 	if (maxchars > 0)
-		CG_DrawStringExt( int(tempx + (BG_drawStrlen(ci->name) * SMALLCHAR_WIDTH + SMALLCHAR_WIDTH)), y, buf, hcolor, qfalse, qfalse, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT, maxchars );
+		CG_DrawStringExt( int(tempx + CG_Text_Width_Ext( ci->name, SMALLCHAR_HEIGHT / 65.f, 0, &cgs.media.limboFont2 ) + SMALLCHAR_WIDTH), y, buf, hcolor, qfalse, qfalse, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT, maxchars );
 
 	tempx += INFO_PLAYER_WIDTH - offset;
 
@@ -498,7 +498,7 @@ static void WM_DrawClientScore_Small( int x, int y, score_t *score, float *color
 	maxchars--;
 	
 	if (maxchars > 0)
-		CG_DrawStringExt( int(tempx + (BG_drawStrlen(ci->name) * MINICHAR_WIDTH + MINICHAR_WIDTH)), y, buf, hcolor, qfalse, qfalse, MINICHAR_WIDTH, MINICHAR_HEIGHT, maxchars );
+		CG_DrawStringExt( int(tempx + CG_Text_Width_Ext( ci->name, MINICHAR_HEIGHT / 65.f, 0, &cgs.media.limboFont2 ) + MINICHAR_WIDTH), y, buf, hcolor, qfalse, qfalse, MINICHAR_WIDTH, MINICHAR_HEIGHT, maxchars );
 	// b033
 
 	// Jaybird
@@ -651,7 +651,7 @@ static int WM_TeamScoreboard( int x, int y, team_t team, float fade, int maxrows
 			}
 			stdDeviation = sqrt(total/numPings);
 		}
-		CG_Text_Paint_Ext( x, y, 0.2f, 0.2f, tclr, va( "AVERAGE PING: %.2fms ± %.2fms", mean, stdDeviation ), 0, 0, 0, &cgs.media.limboFont1 );
+		CG_Text_Paint_Ext( x, y, 0.2f, 0.2f, tclr, va( "AVERAGE PING: %.2fms ? %.2fms", mean, stdDeviation ), 0, 0, 0, &cgs.media.limboFont1 );
 	}
 
 	// draw header
@@ -819,10 +819,11 @@ qboolean CG_DrawScoreboard( void ) {
 	float	fade;
 	float	*fadeColor;
 
+	// ETJump: keep the 4:3 board and center it. Do not stretch it to SCREEN_WIDTH.
 	x = SCREEN_X_OFFSET + 20;
 	y = 10;
 
-	x_right = SCREEN_WIDTH - x - (INFO_TOTAL_WIDTH - 5);
+	x_right = x + INFO_TOTAL_WIDTH + 40;
 
 	// don't draw anything if the menu or console is up
 	if ( cg_paused.integer ) {
@@ -854,7 +855,7 @@ qboolean CG_DrawScoreboard( void ) {
  		fade = fadeColor[3];
 	}
 
-	y = WM_DrawObjectives( x, y, SCREEN_WIDTH - 2*x + 5, fade );
+	y = WM_DrawObjectives( x, y, INFO_TOTAL_WIDTH * 2 + 40, fade );
 
 	if ( cgs.gametype == GT_WOLF_STOPWATCH && ( cg.snap->ps.pm_type == PM_INTERMISSION ) ) {
 		y = WM_DrawInfoLine( x, 155, fade );

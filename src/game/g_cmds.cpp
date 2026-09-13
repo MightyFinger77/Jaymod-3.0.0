@@ -2140,6 +2140,11 @@ qboolean Cmd_CallVote_f( gentity_t *ent, unsigned int dwCommand, qboolean fRefCo
 	trap_Argv( 1, arg1, sizeof( arg1 ) );
 	trap_Argv( 2, arg2, sizeof( arg2 ) );
 
+	if( !fRefCommand && !Enh_CallVoteAllowed( ent, arg1 ) ) {
+		G_printFull("Voting is limited to map votes on this server.", ent);
+		return qfalse;
+	}
+
 	char badChars[] = {';', '\r', '\n'};
 
 	for (int i = 0; i < 3; i++) {

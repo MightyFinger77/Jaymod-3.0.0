@@ -1825,22 +1825,42 @@ void ClientUserinfoChanged( int clientNum ) {
 
     // send over a subset of the userinfo keys so other clients can
     // print scoreboards, display models, and play custom sounds
-    s = va( "n\\%s\\t\\%i\\c\\%i\\r\\%i\\m\\%s\\s\\%s\\dn\\%s\\dr\\%i\\w\\%i\\lw\\%i\\sw\\%i\\mu\\%i\\ref\\%i\\sc\\%i",
-        client->pers.netname, 
-        client->sess.sessionTeam, 
-        client->sess.playerType, 
-        client->sess.rank, 
-        medalStr,
-        skillStr,
-        client->disguiseNetname,
-        client->disguiseRank,
-        client->sess.playerWeapon,
-        client->sess.latchPlayerWeapon,
-        client->sess.latchPlayerWeapon2,
-        connectedUsers[clientNum]->muted ? 1 : 0,
-        client->sess.referee,
-        client->sess.shoutcaster
-    );
+    if (cvars::g_countryflags.ivalue && Enh_CountryId(clientNum) > 0) {
+        s = va( "n\\%s\\t\\%i\\c\\%i\\r\\%i\\m\\%s\\s\\%s\\dn\\%s\\dr\\%i\\w\\%i\\lw\\%i\\sw\\%i\\mu\\%i\\ref\\%i\\sc\\%i\\u\\%i",
+            client->pers.netname,
+            client->sess.sessionTeam,
+            client->sess.playerType,
+            client->sess.rank,
+            medalStr,
+            skillStr,
+            client->disguiseNetname,
+            client->disguiseRank,
+            client->sess.playerWeapon,
+            client->sess.latchPlayerWeapon,
+            client->sess.latchPlayerWeapon2,
+            connectedUsers[clientNum]->muted ? 1 : 0,
+            client->sess.referee,
+            client->sess.shoutcaster,
+            Enh_CountryId(clientNum)
+        );
+    } else {
+        s = va( "n\\%s\\t\\%i\\c\\%i\\r\\%i\\m\\%s\\s\\%s\\dn\\%s\\dr\\%i\\w\\%i\\lw\\%i\\sw\\%i\\mu\\%i\\ref\\%i\\sc\\%i",
+            client->pers.netname,
+            client->sess.sessionTeam,
+            client->sess.playerType,
+            client->sess.rank,
+            medalStr,
+            skillStr,
+            client->disguiseNetname,
+            client->disguiseRank,
+            client->sess.playerWeapon,
+            client->sess.latchPlayerWeapon,
+            client->sess.latchPlayerWeapon2,
+            connectedUsers[clientNum]->muted ? 1 : 0,
+            client->sess.referee,
+            client->sess.shoutcaster
+        );
+    }
 
     trap_GetConfigstring( CS_PLAYERS + clientNum, oldname, sizeof( oldname ) );
     trap_SetConfigstring( CS_PLAYERS + clientNum, s );
@@ -2197,6 +2217,7 @@ ClientConnect( string& outmsg, int clientNum, qboolean firstTime, qboolean isBot
 	G_LogPrintf( "ClientConnect: %i\n", clientNum );
 	G_UpdateCharacter( client );
 	Bot_Event_ClientConnected(clientNum, isBot);
+	Enh_BindCountry( ent, isBot );
 	ClientUserinfoChanged( clientNum );
 
 	// don't do the "xxx connected" messages if they were caried over from previous level
@@ -2204,6 +2225,7 @@ ClientConnect( string& outmsg, int clientNum, qboolean firstTime, qboolean isBot
 	if ( firstTime )
 	{
 		trap_SendServerCommand( -1, va("cpm \"%s" S_COLOR_WHITE " connected\n\"", client->pers.netname) );
+		Enh_ClientConnect( ent, firstTime, isBot );
 	}
 
 	// Jaybird
@@ -2402,6 +2424,7 @@ void ClientBegin( int clientNum )
 	// OSP
 
 	g_clientObjects[clientNum].notifyBegin();
+	Enh_ClientBegin( ent );
 
 #ifdef FEATURE_LUA
 	G_LuaHook_ClientBegin( clientNum );
@@ -2711,7 +2734,8 @@ void ClientSpawn( gentity_t *ent, qboolean revived )
 	//		Bot_Event_Spawn(client->ps.clientNum);
 	//}
 
-	SetWolfSpawnWeapons( client ); 
+	SetWolfSpawnWeapons( client );
+	Enh_ApplySpawn( client ); 
 	
 	// START	Mad Doctor I changes, 8/17/2002
 

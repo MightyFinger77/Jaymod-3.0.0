@@ -76,6 +76,21 @@ Help::doExecute( Context& txt )
     if (i)
         buf << '\n' << xcheader << "--there are " << xheaderBOLD( i ) << " commands available to you.";
 
+    if (txt._client) {
+        std::vector<std::string> enh;
+        Enh_CollectHelp(txt._client->slot, enh);
+        if (!enh.empty()) {
+            buf << '\n' << "^5-ENHMOD COMMANDS";
+            int e = 0;
+            for (size_t n = 0; n < enh.size(); ++n) {
+                if (e++ % 5 == 0)
+                    buf << '\n';
+                buf << col( enh[n] );
+            }
+            buf << '\n' << "^5--there are " << (int)enh.size() << " enhmod commands available to you.";
+        }
+    }
+
     print( txt._client, buf );
     return PA_NONE;
 }

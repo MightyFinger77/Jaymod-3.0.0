@@ -1702,6 +1702,10 @@ void ClientThink( int clientNum )
 {
 	gentity_t *ent = g_entities + clientNum;
 
+#ifdef FEATURE_LUA
+    G_LuaHook_ClientThink( clientNum );
+#endif
+
     // Get the command
     usercmd_t cmd;
     trap_GetUsercmd(clientNum, &cmd);

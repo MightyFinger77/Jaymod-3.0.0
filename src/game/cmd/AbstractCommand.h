@@ -42,7 +42,7 @@ public:
     virtual ~AbstractCommand();
 
     bool execute( Context& );
-    bool hasPermission( const Context& );
+    virtual bool hasPermission( const Context& );
 
     const Privilege _privilege;
 

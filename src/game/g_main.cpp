@@ -1862,6 +1862,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
     // Load censor word list
     censorDB.load();
 
+    Enh_Init();
+
     // We guarantee that this array always points a user object.
     for (int i = 0; i < MAX_CLIENTS; i++)
         connectedUsers[i] = &User::BAD;
@@ -3968,6 +3970,8 @@ void G_RunFrame( int levelTime ) {
 	level.framenum++;
 	level.previousTime = level.time;
 	level.time = levelTime;
+
+	Enh_RunFrame();
 
 	msec = level.time - level.previousTime;
 

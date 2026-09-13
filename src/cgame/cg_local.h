@@ -2237,6 +2237,8 @@ extern	vmCvar_t		cg_tracerSpeed;
 extern	vmCvar_t		cg_autoswitch;
 extern	vmCvar_t		cg_ignore;
 extern	vmCvar_t		cg_fov;
+extern	vmCvar_t		cg_fixedAspect;
+extern	vmCvar_t		jay_fixedAspect;
 extern	vmCvar_t		cg_zoomFov;
 extern	vmCvar_t		cg_zoomDefaultBinoc;
 extern	vmCvar_t		cg_zoomDefaultSniper;
@@ -2474,8 +2476,11 @@ void CG_Letterbox( float xsize, float ysize, qboolean center );
 //
 // cg_drawtools.c
 //
+qboolean CG_UseFixedAspect(void);
+void CG_ApplyFixedAspectScale(void);
 void CG_RestrictScreenWidth(bool restrict);
 bool CG_IsScreenWidthRestricted();
+void CG_DrawSideBars(const float *color);
 void CG_LerpColor2(vec4_t color1, vec4_t color2, vec4_t result, float factor);
 void CG_LerpColor3(vec4_t color1, vec4_t color2, vec4_t color3, vec4_t result, float factor);
 void CG_ColorForPercent( float percent, vec4_t hcolor );
@@ -2485,7 +2490,7 @@ void CG_HorizontalPercentBar( float x, float y, float width, float height, float
 void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader );
 void CG_DrawPicST( float x, float y, float width, float height, float s0, float t0, float s1, float t1, qhandle_t hShader );
 void CG_DrawRotatedPic( float x, float y, float width, float height, qhandle_t hShader, float angle );		// NERVE - SMF
-void CG_DrawChar( int x, int y, int width, int height, int ch );
+void CG_DrawChar( float x, float y, int width, int height, int ch );
 void CG_FilledBar(float x, float y, float w, float h, float *startColor, float *endColor, const float *bgColor, float frac, int flags);
 // JOSEPH 10-26-99
 void CG_DrawStretchPic( float x, float y, float width, float height, qhandle_t hShader );

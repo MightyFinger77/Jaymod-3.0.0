@@ -56,12 +56,15 @@ qboolean G_LuaHook_ClientCommand( int clientNum, const char *command );
 qboolean G_LuaHook_ConsoleCommand( const char *command );
 void G_LuaHook_Obituary( int victim, int killer, int meansOfDeath );
 void G_LuaHook_Damage( int target, int attacker, int damage, int dflags, int mod );
+void G_LuaHook_ClientThink( int clientNum );
+void G_LuaHook_WeaponFire( int clientNum, int weapon );
 
 void G_Lua_RegisterEtLib( lua_State *L );
 void G_Lua_RegisterFields( lua_State *L );
 
 int G_Lua_gentity_get( lua_State *L );
 int G_Lua_gentity_set( lua_State *L );
+int G_Lua_et_IPCSend( lua_State *L );
 
 const char *G_SHA1( const char *string );
 
@@ -82,6 +85,8 @@ const char *G_SHA1( const char *string );
 #define G_LuaHook_ConsoleCommand(a)         qfalse
 #define G_LuaHook_Obituary(a,b,c)           ((void)0)
 #define G_LuaHook_Damage(a,b,c,d,e)         ((void)0)
+#define G_LuaHook_ClientThink(a)            ((void)0)
+#define G_LuaHook_WeaponFire(a,b)           ((void)0)
 #define G_LuaCvarsChanged()                 qfalse
 
 #endif

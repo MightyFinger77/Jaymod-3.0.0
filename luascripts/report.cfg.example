@@ -1,0 +1,10 @@
+# Discord webhook for !report. Copy to report.cfg next to this file.
+# Do not share report.cfg. Do not put the URL in jaymod.cfg.
+#
+# Channel: Edit channel -> Integrations -> Webhooks -> New Webhook -> Copy URL
+# Role IDs: User Settings -> Advanced -> Developer Mode ON,
+#           then right-click each staff role -> Copy Role ID
+# Multiple roles: comma and/or space separated
+# role=123456789012345678, 234567890123456789
+webhook=
+role=

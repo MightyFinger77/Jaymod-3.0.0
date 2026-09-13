@@ -262,10 +262,24 @@ void CG_DrawConnectScreen( qboolean interactive, qboolean forcerefresh ) {
 		bg_loadscreeninited = qtrue;
 	}
 
-	CG_RestrictScreenWidth(true);
+	CG_ApplyFixedAspectScale();
+	{
+		static float loadpanel_xshift = 0;
+		float want = (float)SCREEN_X_OFFSET;
+		vec4_t sideColor = { 0.145f, 0.172f, 0.145f, 1.f };
 
-	// Black out the background
-	CG_FillRect( -10, -10, 650, 490, colorBlack );
+		if( want != loadpanel_xshift ) {
+			BG_PanelButtonsShift( loadpanelButtons, want - loadpanel_xshift, 0 );
+			loadpanel_xshift = want;
+		}
+
+		if( SCREEN_X_OFFSET > 0 ) {
+			CG_FillRect( 0, 0, SCREEN_X_OFFSET, 480, sideColor );
+			CG_FillRect( SCREEN_X_OFFSET + 640, 0, SCREEN_X_OFFSET, 480, sideColor );
+		}
+
+		CG_FillRect( SCREEN_X_OFFSET, 0, 640, 480, colorBlack );
+	}
 
 	BG_PanelButtonsRender( loadpanelButtons );
 
@@ -290,11 +304,11 @@ void CG_DrawConnectScreen( qboolean interactive, qboolean forcerefresh ) {
 		CG_DrawRect_FixedBorder( 8, 23, 230, 216, 1, colorMdGrey );*/
 
 		y = 322;
-		CG_Text_Paint_Centred_Ext( 540, y, 0.22f, 0.22f, clr3, JAYMOD_titlex, 0, 0, 0, &bg_loadscreenfont1 );
+		CG_Text_Paint_Centred_Ext( SCREEN_X_OFFSET + 540, y, 0.22f, 0.22f, clr3, JAYMOD_titlex, 0, 0, 0, &bg_loadscreenfont1 );
 		
 		y = 340;
 		str = Info_ValueForKey( buffer, "sv_hostname" );
-		CG_Text_Paint_Centred_Ext( 540, y, 0.2f, 0.2f, colorWhite, str && *str ? str : "ETHost", 0, 26, 0, &bg_loadscreenfont2 );
+		CG_Text_Paint_Centred_Ext( SCREEN_X_OFFSET + 540, y, 0.2f, 0.2f, colorWhite, str && *str ? str : "ETHost", 0, 26, 0, &bg_loadscreenfont2 );
 		
 		
 		y += 14;
@@ -304,7 +318,7 @@ void CG_DrawConnectScreen( qboolean interactive, qboolean forcerefresh ) {
 				break;
 			}
 
-			CG_Text_Paint_Centred_Ext( 540, y, 0.2f, 0.2f, colorWhite, str, 0, 26, 0, &bg_loadscreenfont2 );
+			CG_Text_Paint_Centred_Ext( SCREEN_X_OFFSET + 540, y, 0.2f, 0.2f, colorWhite, str, 0, 26, 0, &bg_loadscreenfont2 );
 
 			y += 10;
 		}
@@ -313,7 +327,7 @@ void CG_DrawConnectScreen( qboolean interactive, qboolean forcerefresh ) {
 
 		str = Info_ValueForKey( buffer, "g_friendlyfire" );
 		if( str && *str && atoi( str ) ) {
-			x = 461;
+			x = SCREEN_X_OFFSET + 461;
 			CG_DrawPic( x, y, 16, 16, bg_filter_ff );
 		}
 
@@ -335,31 +349,31 @@ void CG_DrawConnectScreen( qboolean interactive, qboolean forcerefresh ) {
 		}
 
 		if( enabled ) {
-			x = 489;
+			x = SCREEN_X_OFFSET + 489;
 			CG_DrawPic( x, y, 16, 16, bg_filter_lv );
 		}
 		
 		str = Info_ValueForKey( buffer, "sv_punkbuster" );
 		if( str && *str && atoi( str ) ) {
-			x = 518;
+			x = SCREEN_X_OFFSET + 518;
 			CG_DrawPic( x, y, 16, 16, bg_filter_pb );
 		}
 
 		str = Info_ValueForKey( buffer, "g_heavyWeaponRestriction" );
 		if( str && *str && atoi( str ) != 100 ) {
-			x = 546;
+			x = SCREEN_X_OFFSET + 546;
 			CG_DrawPic( x, y, 16, 16, bg_filter_hw );
 		}
 
 		str = Info_ValueForKey( buffer, "g_antilag" );
 		if( str && *str && atoi( str ) ) {
-			x = 575;
+			x = SCREEN_X_OFFSET + 575;
 			CG_DrawPic( x, y, 16, 16, bg_filter_al );
 		}
 
 		str = Info_ValueForKey( buffer, "g_balancedteams" );
 		if( str && *str && atoi( str ) ) {
-			x = 604;
+			x = SCREEN_X_OFFSET + 604;
 			CG_DrawPic( x, y, 16, 16, bg_filter_bt );
 		}
 	}
@@ -374,12 +388,12 @@ void CG_DrawConnectScreen( qboolean interactive, qboolean forcerefresh ) {
 		}
 
 		trap_R_SetColor( colorBlack );
-		CG_DrawPic( 16+1, 2+1, 192, 144, bg_mappic );
+		CG_DrawPic( SCREEN_X_OFFSET + 16+1, 2+1, 192, 144, bg_mappic );
 
 		trap_R_SetColor( NULL );
-		CG_DrawPic( 16, 2, 192, 144, bg_mappic );
+		CG_DrawPic( SCREEN_X_OFFSET + 16, 2, 192, 144, bg_mappic );
 
-		CG_DrawPic( 16+80, 2+6, 20, 20, bg_pin );
+		CG_DrawPic( SCREEN_X_OFFSET + 16+80, 2+6, 20, 20, bg_pin );
 	}
 
 	if( forcerefresh ) {
@@ -387,8 +401,6 @@ void CG_DrawConnectScreen( qboolean interactive, qboolean forcerefresh ) {
 	}
 
 	inside = qfalse;
-
-	CG_RestrictScreenWidth(false);
 }
 
 void CG_LoadPanel_RenderLoadingBar( panel_button_t* button ) {
@@ -547,7 +559,7 @@ void CG_LoadPanel_DrawPin( const char* text, float px, float py, float sx, float
 	// Pin left margin is 4
 	// Pin right margin is 0
 	// Text margin is 4
-	if( px + 20 + w > 440 ) {
+	if( px + 20 + w > SCREEN_X_OFFSET + 440 ) {
 		// x - pinhwidth (16) - pin left margin (4) - w - text margin (4) => x - w - 24
 		DC->fillRect( px - w - 24 + 2, py - (backheight/2.f) + 2, 24 + w, backheight, colourFadedBlack );
 		DC->fillRect( px - w - 24, py - (backheight/2.f), 24 + w, backheight, colorBlack );
@@ -559,7 +571,7 @@ void CG_LoadPanel_DrawPin( const char* text, float px, float py, float sx, float
 
 	DC->drawHandlePic( px - pinsize, py - pinsize, pinsize * 2.f, pinsize * 2.f, shader );
 
-	if( px + 20 + w > 440 ) {
+	if( px + 20 + w > SCREEN_X_OFFSET + 440 ) {
 		// x - pinhwidth (16) - pin left margin (4) - w => x - w - 20
 		DC->drawTextExt( px - w - 20, py + 4, sx, sy, colorWhite, text, 0, 0, 0, &bg_loadscreenfont2 );
 	} else {
@@ -586,7 +598,7 @@ void CG_LoadPanel_RenderCampaignPins( panel_button_t* button ) {
 			return;
 		}
 
-		px = ( cgs.arenaData.mappos[0] / 1024.f ) * 440.f;
+		px = ( cgs.arenaData.mappos[0] / 1024.f ) * 440.f + SCREEN_X_OFFSET;
 		py = ( cgs.arenaData.mappos[1] / 1024.f ) * 480.f;
 
 		CG_LoadPanel_DrawPin( cgs.arenaData.longname, px, py, 0.22f, 0.25f, bg_neutralpin, 16.f, 16.f );
@@ -609,7 +621,7 @@ void CG_LoadPanel_RenderCampaignPins( panel_button_t* button ) {
 				shader = bg_neutralpin;
 			}
 
-			px = ( cgs.campaignData.arenas[i].mappos[0] / 1024.f ) * 440.f;
+			px = ( cgs.campaignData.arenas[i].mappos[0] / 1024.f ) * 440.f + SCREEN_X_OFFSET;
 			py = ( cgs.campaignData.arenas[i].mappos[1] / 1024.f ) * 480.f;
 
 			CG_LoadPanel_DrawPin( cgs.campaignData.arenas[i].longname, px, py, 0.22f, 0.25f, shader, 16.f, 16.f );

@@ -5,11 +5,11 @@ namex = ^xJay^4mod
 website   = http://jaymod.clanfu.org
 author    = RNGesus
 authorOrig = Jaybird
-copyright = Copyright (c) 2005-2011 Jaybird. 3.0.0 (c) 2026 RNGesus.
+copyright = Copyright (c) 2005-2011 Jaybird. 3.1.0 (c) 2026 RNGesus.
 irc       = irc.freenode.net #jaymod
 
 versionMajor = 3
-versionMinor = 0
+versionMinor = 1
 versionPoint = 0
 
 buildDate    = enable

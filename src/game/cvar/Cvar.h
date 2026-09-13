@@ -35,6 +35,15 @@ namespace objects {
     extern Cvar sv_tempBanMessage;
 
     extern Cvar g_test; // TODO: nuke when done with scale testing
+
+    extern Cvar g_em_votemap;
+    extern Cvar g_adrenenalinecls;
+    extern Cvar g_drawAttackerHP;
+    extern Cvar g_countryflags;
+    extern Cvar g_flagsbehaviour;
+    extern Cvar g_rifleWar;
+    extern Cvar g_pistolWar;
+    extern Cvar g_pumpgunWar;
 } // namespace objects
 
 ///////////////////////////////////////////////////////////////////////////////

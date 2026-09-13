@@ -446,6 +446,7 @@ typedef struct {
 	float			yscale;
 	float			xscale;
 	float			bias;
+	int				screenWidth;
 	int				realTime;
 	int				frameTime;
 	int				cursorx;
@@ -586,6 +587,7 @@ void BG_PanelButton_RenderEdit( panel_button_t* button );
 qboolean BG_PanelButton_EditClick( panel_button_t* button, int key );
 qboolean BG_PanelButtonsKeyEvent( int key, qboolean down, panel_button_t** buttons );
 void BG_PanelButtonsSetup( panel_button_t** buttons );
+void BG_PanelButtonsShift( panel_button_t** buttons, float dx, float dy );
 void BG_PanelButtonsRender( panel_button_t** buttons );
 void BG_PanelButtonsRender_Text( panel_button_t* button );
 void BG_PanelButtonsRender_TextExt( panel_button_t* button, const char* text );

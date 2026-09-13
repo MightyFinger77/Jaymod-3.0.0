@@ -265,6 +265,9 @@ process( Client* actor, bool silent, string* str )
 
     AbstractCommand* command = commandForName( s );
     if (!command) {
+        const int slot = actor ? actor->slot : -1;
+        if (Enh_TryCustom(slot, txt._args))
+            return true;
         Buffer buf;
         buf << xfail( "Uknown command: " ) << '!' << xvalue( s );
         printChat( NULL, buf );

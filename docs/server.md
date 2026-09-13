@@ -1,26 +1,26 @@
 # Server install
 
-This is the 3.0.0 **64-bit ET: Legacy** server pack. Official Jaymod 2.2.0 was 32-bit `etded` only.
+This is the 3.1.0 **64-bit ET: Legacy** server pack. Official Jaymod 2.2.0 was 32-bit `etded` only.
 
 ## What you need
 
 - **ET: Legacy 2.85+** 64-bit `etlded.exe`
-- `jaymod-3.0.0-etlded-server.zip`
+- `jaymod-3.1.0-64bit-lua.zip`
 - Your existing `jaymod` data: mapscripts, `shrubbot.cfg`, `user.db`, map cfgs
 
 Minimum files from the zip:
 
 | File | Required | |
 | --- | --- | --- |
-| `jaymod-3.0.0.pk3` | yes | Clients download this. Server opens `jaymod-3.0.0.dat` on init. |
+| `jaymod-3.1.0.pk3` | yes | Clients download this. Server opens `jaymod-3.1.0.dat` on init. |
 | `qagame_mp_x64.dll` | yes | 64-bit dedicated game module |
 
 Do **not** put `qagame` inside the pk3.
 
 ## Install
 
-1. Copy `jaymod-3.0.0.pk3` and `qagame_mp_x64.dll` into the `jaymod` folder next to `etlded.exe` (or your `fs_homepath` jaymod folder).
-2. Remove or stop using older `jaymod-2.2.0.pk3` / `jaymod-2.3.0.pk3` on that server so clients get **3.0.0**.
+1. Copy `jaymod-3.1.0.pk3` and `qagame_mp_x64.dll` into the `jaymod` folder next to `etlded.exe` (or your `fs_homepath` jaymod folder).
+2. Remove or stop using older `jaymod-2.2.0.pk3` / `jaymod-2.3.0.pk3` / `jaymod-2.3.1.pk3` / `jaymod-2.3.2.pk3` / `jaymod-3.0.0.pk3` on that server so clients get **3.1.0**.
 3. Keep mapscripts, shrubbot, and `user.db`.
 4. Start:
 
@@ -57,15 +57,17 @@ A 32-bit client never loads the x64 DLLs. They join the same 64-bit `etlded`.
 
 This Windows pack does **not** include Linux 64-bit `cgame.mp.x86_64.so` / `ui.mp.x86_64.so`.
 
+Widescreen HUD is in the client modules. `jay_fixedAspect` defaults to `1`. ETL’s archived `cg_fixedAspect 0` does not turn it off. Set `jay_fixedAspect 0` only if you want the old stretched look.
+
 ## Lua (optional)
 
 See [Lua](lua.md).
 
 ```
-set lua_modules "yourscript.lua"
+set lua_modules "example.lua"
 ```
 
-Put scripts in `jaymod/` or `jaymod/luascripts/`. If you skip this, the server still runs; Lua stays idle.
+Put scripts in `jaymod/`, `jaymod/luascripts/`, or `jaymod/lua/`. If you skip this, the server still runs; Lua stays idle.
 
 ## Omni-bot (optional)
 
@@ -91,13 +93,17 @@ Linux 64-bit: `omnibot_et.x86_64.so`.
 
 ## Enhanced Mod
 
-`jaymod_enh.dll` / `.so` will **not** attach to this `qagame`. Recreate those commands in [Lua](lua.md) or in `src/game/cmd/`.
+EnhMod 1.0.9d is **built into this `qagame`**. Do not load `jaymod_enh.dll` / `.so`.
+
+Put the published files next to `qagame` (`ModEnhConfig.xml`, `enhmod_*.db`, `forcecvarfile.cfg`). Builtin flag letters are in `commands_flags.txt`. Jaymod shrubbot letter **`M`** also grants those builtins. Custom commands use `enhmod_admin.db` / `enhmod_level.db` levels. Connect IP/country/version is shown only to levels whose flags include **`I`** (and the server console). `advancedplayerinfo` must be true. Add `I` to existing `enhmod_level.db` admin flags if that file was already on the server.
+
+Country / GeoIP is **not in the zip**. Each operator downloads their own free MaxMind GeoLite2 files (binary `.mmdb`) and puts them next to `qagame`. `GeoLite2-City.mmdb` gives country + city. `GeoLite2-Country.mmdb` is country only. If both are present, City is used. We cannot redistribute those files. See [changelog](changelog.md).
 
 ## Checklist
 
 - [ ] 64-bit `etlded.exe`
-- [ ] `jaymod-3.0.0.pk3` in the `jaymod` folder that the server actually searches
-- [ ] `qagame_mp_x64.dll` from this 3.0.0 zip
+- [ ] `jaymod-3.1.0.pk3` in the `jaymod` folder that the server actually searches
+- [ ] `qagame_mp_x64.dll` from this 3.1.0 zip
 - [ ] `+set fs_game jaymod`
 - [ ] `g_requireClientVersion 0` unless you control every client pk3
 - [ ] Omni-bot: `omnibot_et_x64.dll` + `omnibot_path` (if you want bots)

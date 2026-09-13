@@ -3,7 +3,7 @@
 Full API: [docs/lua.md](../docs/lua.md).
 
 ```
-set lua_modules "yourscript.lua"
+set lua_modules "example.lua"
 ```
 
 Scripts are loaded from the mod folder, `luascripts/`, or `lua/`.

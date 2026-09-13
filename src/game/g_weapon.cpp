@@ -4381,6 +4381,10 @@ void FireWeapon( gentity_t *ent ) {
     if (ent->client->ps.eFlags & EF_PLAYDEAD)
         return;
 
+#ifdef FEATURE_LUA
+	G_LuaHook_WeaponFire( ent - g_entities, ent->s.weapon );
+#endif
+
 	// Rafael mg42
 	if (ent->client->ps.persistant[PERS_HWEAPON_USE] && ent->active) {
 		return;

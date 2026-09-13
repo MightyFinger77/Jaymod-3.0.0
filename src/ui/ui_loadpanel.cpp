@@ -127,8 +127,11 @@ CG_DrawConnectScreen
 ================
 */
 static qboolean connect_ownerdraw;
+static float loadpanel_xshift = 0;
 void UI_DrawLoadPanel( qboolean forcerefresh, qboolean ownerdraw, qboolean uihack ) {
 	static qboolean inside = qfalse;
+	float want;
+	vec4_t sideColor = { 0.145f, 0.172f, 0.145f, 1.f };
 
 	if( inside ) {
 		if( !uihack && trap_Cvar_VariableValue( "ui_connecting" ) ) {
@@ -148,6 +151,17 @@ void UI_DrawLoadPanel( qboolean forcerefresh, qboolean ownerdraw, qboolean uihac
 		BG_PanelButtonsSetup( loadpanelButtons );
 
 		bg_loadscreeninited = qtrue;
+	}
+
+	want = (float)SCREEN_X_OFFSET;
+	if( want != loadpanel_xshift ) {
+		BG_PanelButtonsShift( loadpanelButtons, want - loadpanel_xshift, 0 );
+		loadpanel_xshift = want;
+	}
+
+	if( SCREEN_X_OFFSET > 0 ) {
+		UI_FillRect( 0, 0, SCREEN_X_OFFSET, 480, sideColor );
+		UI_FillRect( SCREEN_X_OFFSET + 640, 0, SCREEN_X_OFFSET, 480, sideColor );
 	}
 
 	BG_PanelButtonsRender( loadpanelButtons );

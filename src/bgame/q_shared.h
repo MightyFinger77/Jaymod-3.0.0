@@ -413,6 +413,9 @@ extern	vec3_t	bytedirs[NUMVERTEXNORMALS];
 // and will be automatically scaled to the real resolution
 #ifdef CGAMEDLL
 #define	SCREEN_WIDTH		CG_GetScreenWidth()
+#elif defined(UIDLL)
+int UI_GetScreenWidth(void);
+#define	SCREEN_WIDTH		UI_GetScreenWidth()
 #else
 #define	SCREEN_WIDTH		640
 #endif

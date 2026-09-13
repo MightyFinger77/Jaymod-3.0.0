@@ -394,6 +394,8 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		weap = BG_WeaponForMOD( meansOfDeath );
     	}
 
+	Enh_Obituary( self, attacker, meansOfDeath );
+
 	if(attacker == self) {
 		if(self->client) {
 			self->client->pers.playerStats.suicides++;
@@ -1370,6 +1372,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, const
 		// Jaybird - playdead check
 		if ( targ->client ) {
 			targ->client->ps.stats[STAT_HEALTH] = targ->health;
+			Enh_Damage(targ, attacker);
 		}
 
         // Cheap way to ID inflictor entity as poison smoke.

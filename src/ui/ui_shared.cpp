@@ -650,26 +650,82 @@ void Item_UpdatePosition(itemDef_t *item) {
 	
 }
 
+static qboolean UI_MenuIsCenteredDialog(menuDef_t *menu) {
+	const char *n;
+
+	if (menu == NULL || menu->window.name == NULL)
+		return qfalse;
+	n = menu->window.name;
+	if (!Q_stricmp(n, "quit") || !Q_stricmp(n, "credits_quit") ||
+		!Q_stricmp(n, "ingame_disconnect") || !Q_stricmp(n, "vid_confirm") ||
+		!Q_stricmp(n, "vid_restart") || !Q_stricmp(n, "rec_restart"))
+		return qtrue;
+	if (!Q_stricmpn(n, "popup_", 6))
+		return qtrue;
+	return qfalse;
+}
+
 // menus
 void Menu_UpdatePosition(menuDef_t *menu) {
 	int i;
 	float x, y;
-	
+	qboolean fullscreenMenu;
+	qboolean centerDialog;
+
 	if (menu == NULL) {
 		return;
 	}
-	
+
 	x = menu->window.rect.x;
 	y = menu->window.rect.y;
-
-    /*if (menu->window.border != 0) {
-		x += menu->window.borderSize;
-		y += menu->window.borderSize;
-	}*/
-	
-	for (i = 0; i < menu->itemCount; i++) {
-		Item_SetScreenCoords(menu->items[i], x, y);
+	centerDialog = UI_MenuIsCenteredDialog(menu);
+	if (centerDialog) {
+		if (menu->window.rectClient.w == 0 && menu->window.rectClient.h == 0) {
+			menu->window.rectClient = menu->window.rect;
+		}
+		x = menu->window.rectClient.x + SCREEN_X_OFFSET;
+		y = menu->window.rectClient.y;
+		menu->window.rect.x = x;
+		menu->window.rect.y = y;
 	}
+	fullscreenMenu = (menu->window.rect.x == 0 && menu->window.rect.y == 0 &&
+		(menu->window.rect.w == 640 || menu->window.rect.w == SCREEN_WIDTH) &&
+		menu->window.rect.h == SCREEN_HEIGHT) ? qtrue : qfalse;
+
+	// ETJump: keep 4:3 widget sizes, center them, let fullscreen art fill the sides.
+	for (i = 0; i < menu->itemCount; i++) {
+		rectDef_t *r = &menu->items[i]->window.rectClient;
+		qboolean fullscreenItem = (r->x == 0 && r->y == 0 &&
+			(r->w == 640 || r->w == SCREEN_WIDTH) && r->h == SCREEN_HEIGHT) ? qtrue : qfalse;
+
+		if (fullscreenItem)
+			r->w = (float)SCREEN_WIDTH;
+
+		if ((fullscreenMenu && !fullscreenItem) || !Q_stricmp(menu->window.name, "main") ||
+			!Q_stricmp(menu->window.name, "ingame_main")) {
+			if ((!Q_stricmp(menu->window.name, "main") || !Q_stricmp(menu->window.name, "ingame_main")) &&
+				Q_stricmp(menu->items[i]->window.name, "et_logo")) {
+				Item_SetScreenCoords(menu->items[i], x, y);
+			} else {
+				Item_SetScreenCoords(menu->items[i], x + SCREEN_X_OFFSET, y);
+			}
+		} else {
+			Item_SetScreenCoords(menu->items[i], x, y);
+		}
+
+		// Stock quit/disconnect fade is 640x480 at -WINDOW_X,-WINDOW_Y.
+		// After the dialog is centered that overlay starts at SCREEN_X_OFFSET
+		// and leaves a clear strip on the left — stretch it to the real width.
+		if ((r->w == 640 || r->w == SCREEN_WIDTH) && r->h == SCREEN_HEIGHT) {
+			menu->items[i]->window.rect.x = 0;
+			menu->items[i]->window.rect.y = 0;
+			menu->items[i]->window.rect.w = (float)SCREEN_WIDTH;
+			menu->items[i]->window.rect.h = (float)SCREEN_HEIGHT;
+		}
+	}
+
+	if (fullscreenMenu)
+		menu->window.rect.w = (float)SCREEN_WIDTH;
 }
 
 void Menu_PostParse(menuDef_t *menu) {
@@ -681,6 +737,9 @@ void Menu_PostParse(menuDef_t *menu) {
 		menu->window.rect.y = 0;
 		menu->window.rect.w = 640;
 		menu->window.rect.h = 480;
+	}
+	if (menu->window.rectClient.w == 0 && menu->window.rectClient.h == 0) {
+		menu->window.rectClient = menu->window.rect;
 	}
 	Menu_UpdatePosition(menu);
 }
@@ -4599,8 +4658,7 @@ qboolean Item_Bind_HandleKey(itemDef_t *item, int key, qboolean down) {
 
 
 void AdjustFrom640(float *x, float *y, float *w, float *h) {
-	//*x = *x * DC->scale + DC->bias;
-	*x *= DC->xscale;
+	*x = *x * DC->xscale + DC->bias;
 	*y *= DC->yscale;
 	*w *= DC->xscale;
 	*h *= DC->yscale;
@@ -7624,6 +7682,16 @@ void BG_PanelButtonsSetup( panel_button_t** buttons ) {
 		if( button->shaderNormal ) {
 			button->hShaderNormal = trap_R_RegisterShaderNoMip( button->shaderNormal );
 		}			
+	}
+}
+
+void BG_PanelButtonsShift( panel_button_t** buttons, float dx, float dy ) {
+	panel_button_t* button;
+
+	for( ; *buttons; buttons++ ) {
+		button = (*buttons);
+		button->rect.x += dx;
+		button->rect.y += dy;
 	}
 }
 

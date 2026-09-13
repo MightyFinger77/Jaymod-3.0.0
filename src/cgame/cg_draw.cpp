@@ -98,6 +98,15 @@ int CG_Text_Height( const char *text, float scale, int limit ) {
 void CG_Text_PaintChar_Ext(float x, float y, float w, float h, float scalex, float scaley, float s, float t, float s2, float t2, qhandle_t hShader) {
 	w *= scalex;
 	h *= scaley;
+	// Keep glyphs square on widescreen: position with X scale, size from height.
+	if (CG_UseFixedAspect() && !CG_IsScreenWidthRestricted()) {
+		x *= cgs.screenXScale;
+		y *= cgs.screenYScale;
+		w *= cgs.screenYScale;
+		h *= cgs.screenYScale;
+		trap_R_DrawStretchPic( x, y, w, h, s, t, s2, t2, hShader );
+		return;
+	}
 	CG_AdjustFrom640( &x, &y, &w, &h );
 	trap_R_DrawStretchPic( x, y, w, h, s, t, s2, t2, hShader );
 }
@@ -359,13 +368,13 @@ static void CG_DrawGameState() {
         colorText[2] = 0.0f;
         colorText[3] = 1.0f;
 
-        const vec4_t box = {
-            cgs.screenXScale * (SCREEN_WIDTH - iconSize[0]),
+        float box[4] = {
+            SCREEN_WIDTH - iconSize[0],
             0,
-            cgs.screenXScale * iconSize[0],
-            cgs.screenYScale * iconSize[1],
-
+            iconSize[0],
+            iconSize[1],
         };
+        CG_AdjustFrom640( &box[0], &box[1], &box[2], &box[3] );
 
         trap_R_SetColor( colorCorner );
         trap_R_DrawStretchPic( box[0], box[1], box[2], box[3], 0.0f, 0.0f, 1.0f, 1.0f, shaderCorner );
@@ -460,12 +469,13 @@ static void CG_DrawGameState() {
             return;
     }
 
-    const vec4_t box = {
-        cgs.screenXScale * (SCREEN_WIDTH - iconSize[0]),
+    float box[4] = {
+        SCREEN_WIDTH - iconSize[0],
         0,
-        cgs.screenXScale * iconSize[0],
-        cgs.screenYScale * iconSize[1],
+        iconSize[0],
+        iconSize[1],
     };
+    CG_AdjustFrom640( &box[0], &box[1], &box[2], &box[3] );
 
     trap_R_SetColor( colorCorner );
     trap_R_DrawStretchPic( box[0], box[1], box[2], box[3], 0.0f, 0.0f, 1.0f, 1.0f, shaderCorner );
@@ -490,8 +500,8 @@ static void CG_DrawGameState() {
     const string text = oss.str();
 
     console.fontShadowed.drawLine(
-        1 + (int)(cgs.glconfig.vidWidth - cp[0] - ((text.length()*console.fontShadowed.charWidth) / 2.0f)),
-        1 + (int)(cp[1] - (console.fontShadowed.charHeight / 2.0f)),
+        1 + (int)(box[0] + box[2] - cp[0] - ((text.length()*console.fontShadowed.charWidth) / 2.0f)),
+        1 + (int)(box[1] + cp[1] - (console.fontShadowed.charHeight / 2.0f)),
         text,
         colorGreen );
 
@@ -2159,8 +2169,15 @@ static void CG_DrawBinocReticle(void) {
 	color[0] = color[1] = color[2] = 0;
 	color[3] = 1;
 
-	if(cgs.media.binocShaderSimple)
-		CG_DrawPic( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, cgs.media.binocShaderSimple );
+	if(cgs.media.binocShaderSimple) {
+		if (CG_UseFixedAspect()) {
+			CG_RestrictScreenWidth(true);
+			CG_DrawPic( 0, 0, 640, 480, cgs.media.binocShaderSimple );
+			CG_RestrictScreenWidth(false);
+		} else {
+			CG_DrawPic( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, cgs.media.binocShaderSimple );
+		}
+	}
 
 	CG_FillRect (SCREEN_X_OFFSET + 146, 239, 348, 1, color);
 
@@ -4982,7 +4999,9 @@ static void CG_Draw2D( void ) {
 
 	if( !cg.cameraMode ) {
 		CG_DrawFlashBlendBehindHUD();
+	}
 
+	if( !cg.cameraMode ) {
 		if ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ) {
 			CG_DrawSpectator();
 			CG_DrawCrosshair();

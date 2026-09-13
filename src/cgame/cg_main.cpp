@@ -146,6 +146,8 @@ vmCvar_t	cg_tracerSpeed;
 vmCvar_t	cg_autoswitch;
 vmCvar_t	cg_ignore;
 vmCvar_t	cg_fov;
+vmCvar_t	cg_fixedAspect;
+vmCvar_t	jay_fixedAspect;
 vmCvar_t	cg_zoomFov;
 vmCvar_t	cg_zoomStepBinoc;
 vmCvar_t	cg_zoomStepSniper;
@@ -356,6 +358,8 @@ cvarTable_t		cvarTable[] = {
 	{ &cg_zoomStepSnooper, "cg_zoomStepSnooper", "5", CVAR_ARCHIVE },
 	{ &cg_zoomStepFG, "cg_zoomStepFG", "10", CVAR_ARCHIVE },			//----(SA)	added
 	{ &cg_fov, "cg_fov", "90", CVAR_ARCHIVE },
+	{ &cg_fixedAspect, "cg_fixedAspect", "1", CVAR_ARCHIVE },
+	{ &jay_fixedAspect, "jay_fixedAspect", "1", CVAR_ARCHIVE },
 	{ &cg_letterbox, "cg_letterbox", "0", CVAR_TEMP },	//----(SA)	added
 	{ &cg_stereoSeparation, "cg_stereoSeparation", "0.4", CVAR_ARCHIVE  },
 	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE  },
@@ -2780,6 +2784,7 @@ void CG_LoadHudMenu() {
 	
 	cgDC.xscale = cgs.screenXScale;
 	cgDC.yscale = cgs.screenYScale;
+	cgDC.screenWidth = CG_GetScreenWidth();
 
 	Init_Display(&cgDC);
 
@@ -2867,7 +2872,15 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qb
 	// get the rendering configuration from the client system
 	trap_GetGlconfig( &cgs.glconfig );
 	cgs.screenYScale = cgs.glconfig.vidHeight / 480.0;
-	cgs.screenXScale = cgs.glconfig.vidWidth / (float)SCREEN_WIDTH;
+	{
+		int vw = (int)(cgs.glconfig.vidWidth * 480.0f / cgs.glconfig.vidHeight);
+		if (vw % 2 == 1)
+			vw++;
+		if (vw < 640)
+			vw = 640;
+		cgs.screenXScale = cgs.glconfig.vidWidth / (float)vw;
+	}
+	cgs.screenXBias = 0;
 
 	// RF, init the anim scripting
 	cgs.animScriptData.soundIndex = CG_SoundScriptPrecache;
@@ -2910,6 +2923,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qb
 		cgs.media.lagometerShader = cgs.media.whiteShader;
 
 	CG_RegisterCvars();
+	CG_ApplyFixedAspectScale();
 	process.init();
 	BG_cpuUpdate();
 
@@ -2917,6 +2931,16 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qb
 
 	// Gordon: moved this up so it's initialized for the loading screen
 	CG_LoadHudMenu();      // load new hud stuff
+	CG_ApplyFixedAspectScale();
+	CG_Printf( "Jaymod HUD: %dx%d  wide=%s  cgame=%s  jay_fixedAspect=%s\n",
+		cgs.glconfig.vidWidth, cgs.glconfig.vidHeight,
+		CG_UseFixedAspect() ? "on" : "off",
+#ifdef _WIN64
+		"x64",
+#else
+		"x86",
+#endif
+		jay_fixedAspect.string[0] ? jay_fixedAspect.string : "unset" );
 	CG_AssetCache();
 
 	// get the gamestate from the client system
@@ -2944,11 +2968,11 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qb
 	}
 	trap_Cvar_Set( "cg_etVersion", GAME_VERSION_DATED );	// So server can check
 
-    // Check Jaymod version. 2.3.x and 3.0.0 share the same network
+    // Check Jaymod version. 2.3.x / 3.0.0 / 3.1.0 share the same network
     // protocol; aborting here unloads cgame and ET: Legacy 32-bit then
     // dies with STATUS_BAD_STACK on the loading screen.
     s = Info_ValueForKey( CG_ConfigString( CS_JAYMODINFO ), "jver" );
-    if ( !*s || (Q_stricmp( s, JAYMOD_title ) && Q_stricmp( s, "Jaymod 3.0.0" ) && Q_stricmp( s, "Jaymod 2.3.1" ) && Q_stricmp( s, "Jaymod 2.3.0" )) ) {
+    if ( !*s || (Q_stricmp( s, JAYMOD_title ) && Q_stricmp( s, "Jaymod 3.1.0" ) && Q_stricmp( s, "Jaymod 3.0.0" ) && Q_stricmp( s, "Jaymod 2.3.2" ) && Q_stricmp( s, "Jaymod 2.3.1" ) && Q_stricmp( s, "Jaymod 2.3.0" )) ) {
 		CG_Error( JAYMOD_namex " ^3Version Mismatch\n^xClient: ^1%s\n^xServer: ^2%s\n\n^3Usually ^3shutting ^3down ^3and ^3restarting ^3your ^3game ^3will ^3fix ^3this ^3problem. ^3If ^3it ^3persists, ^3contact ^3the ^3server ^3administrator ^3regarding ^3a ^3possible ^3server ^3misconfiguration.", JAYMOD_title, *s ? s : "[MISSING INFO]" );
     }
 
@@ -3165,24 +3189,17 @@ qboolean CG_Cvar_ClampInt( const char *name, vmCvar_t *vmCvar, int min, int max 
 	return qfalse;
 }
 
-int CG_GetScreenWidth()
+	int CG_GetScreenWidth()
 {
-	if (CG_IsScreenWidthRestricted()) {
+	int width;
+
+	if (CG_IsScreenWidthRestricted() || !CG_UseFixedAspect())
 		return 640;
-	}
 
-	int width = (int)(cgs.glconfig.vidWidth * 480.0f / cgs.glconfig.vidHeight);
-
-	// I prefer to have this number be even
-	if (width % 2 == 1) {
+	width = (int)(cgs.glconfig.vidWidth * 480.0f / cgs.glconfig.vidHeight);
+	if (width % 2 == 1)
 		width++;
-	}
-
-	// 5:4 resolutions are actually narrower than 4:3, so make sure the screen is at least 640 wide
-	// TODO: It would be nice to remove this eventually, but it would require reworking a few things (scoreboard is an example)
-	if (width < 640) {
+	if (width < 640)
 		width = 640;
-	}
-
 	return width;
 }

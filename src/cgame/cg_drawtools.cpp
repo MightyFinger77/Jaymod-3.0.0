@@ -55,14 +55,87 @@ void CG_LerpColor3(vec4_t color1, vec4_t color2, vec4_t color3, vec4_t result, f
     }
 }
 
+// ETJump / ETL widescreen: keep 4:3 element sizes, expand the virtual
+// width so left HUD stays on the left and right HUD stays on the right.
+static int CG_WideVirtualWidth()
+{
+	int width;
+
+	width = (int)(cgs.glconfig.vidWidth * 480.0f / cgs.glconfig.vidHeight);
+	if (width % 2 == 1)
+		width++;
+	if (width < 640)
+		width = 640;
+	return width;
+}
+
+static float CG_PillarboxBias()
+{
+	if (cgs.glconfig.vidWidth * 480 <= cgs.glconfig.vidHeight * 640)
+		return 0;
+	return 0.5f * (cgs.glconfig.vidWidth - (cgs.glconfig.vidHeight * (640.0f / 480.0f)));
+}
+
+qboolean CG_UseFixedAspect(void)
+{
+	// Own cvar so ETL's archived cg_fixedAspect 0 does not disable the HUD.
+	// Unset counts as on. Only jay_fixedAspect 0 turns it off (vanilla stretch).
+	if (jay_fixedAspect.string[0] == '0' && jay_fixedAspect.string[1] == '\0')
+		return qfalse;
+	return qtrue;
+}
+
+void CG_ApplyFixedAspectScale(void)
+{
+	cgs.screenYScale = cgs.glconfig.vidHeight / 480.0f;
+	if (CG_UseFixedAspect())
+		cgs.screenXScale = cgs.glconfig.vidWidth / (float)CG_WideVirtualWidth();
+	else
+		cgs.screenXScale = cgs.glconfig.vidWidth / 640.0f;
+	cgs.screenXBias = 0;
+	cgDC.xscale = cgs.screenXScale;
+	cgDC.yscale = cgs.screenYScale;
+	cgDC.bias = 0;
+}
+
 void CG_RestrictScreenWidth(bool restrict)
 {
 	customScreenWidth = restrict;
+	if (restrict) {
+		cgs.screenXBias = CG_PillarboxBias();
+		cgDC.xscale = cgs.screenYScale;
+		cgDC.yscale = cgs.screenYScale;
+		cgDC.bias = cgs.screenXBias;
+	} else {
+		CG_ApplyFixedAspectScale();
+	}
 }
 
 bool CG_IsScreenWidthRestricted()
 {
 	return customScreenWidth;
+}
+
+void CG_DrawSideBars(const float *color)
+{
+	float bias;
+	vec4_t bar;
+
+	if (!CG_UseFixedAspect())
+		return;
+	bias = CG_PillarboxBias();
+	if (bias <= 0)
+		return;
+	if (color)
+		Vector4Copy(color, bar);
+	else {
+		bar[0] = bar[1] = bar[2] = 0;
+		bar[3] = 1;
+	}
+	trap_R_SetColor(bar);
+	trap_R_DrawStretchPic(0, 0, bias, cgs.glconfig.vidHeight, 0, 0, 0, 1, cgs.media.whiteShader);
+	trap_R_DrawStretchPic(cgs.glconfig.vidWidth - bias, 0, bias, cgs.glconfig.vidHeight, 0, 0, 0, 1, cgs.media.whiteShader);
+	trap_R_SetColor(NULL);
 }
 
 /*
@@ -73,32 +146,16 @@ Adjusted for resolution and screen aspect ratio
 ================
 */
 void CG_AdjustFrom640( float *x, float *y, float *w, float *h ) {
-#if 0
-	// adjust for wide screens
-	if ( cgs.glconfig.vidWidth * 480 > cgs.glconfig.vidHeight * 640 ) {
-		*x += 0.5 * ( cgs.glconfig.vidWidth - ( cgs.glconfig.vidHeight * 640 / 480 ) );
-	}
-#endif
-
-/*	if ( (cg.showGameView) && cg.refdef_current->width ) {
-		float xscale = ( ( cg.refdef_current->width / cgs.screenXScale ) / 640.f );
-		float yscale = ( ( cg.refdef_current->height / cgs.screenYScale ) / 480.f );
-
-		(*x) = (*x) * xscale + ( cg.refdef_current->x / cgs.screenXScale );
-		(*y) = (*y) * yscale + ( cg.refdef_current->y / cgs.screenYScale );
-		(*w) *= xscale;
-		(*h) *= yscale;
-	}*/
-
 	if (CG_IsScreenWidthRestricted()) {
-		float scale = (float)cgs.glconfig.vidWidth / 640.f;
-		*x *= scale;
-		*w *= scale;
-}
-	else {
-		*x *= cgs.screenXScale;
-		*w *= cgs.screenXScale;
+		*x = *x * cgs.screenYScale + cgs.screenXBias;
+		*y *= cgs.screenYScale;
+		*w *= cgs.screenYScale;
+		*h *= cgs.screenYScale;
+		return;
 	}
+
+	*x *= cgs.screenXScale;
+	*w *= cgs.screenXScale;
 	*y *= cgs.screenYScale;
 	*h *= cgs.screenYScale;
 }
@@ -396,15 +453,39 @@ CG_DrawChar
 Coordinates and size in 640*480 virtual screen size
 ===============
 */
-void CG_DrawChar( int x, int y, int width, int height, int ch ) {
+static float CG_DrawCharStep( int ch, int charWidth, int charHeight ) {
+	unsigned int c = (unsigned char)ch;
+
+	if ( cgs.media.limboFont2.glyphs[c].glyph )
+		return cgs.media.limboFont2.glyphs[c].xSkip * (charHeight / 65.f * cgs.media.limboFont2.glyphScale);
+	return (float)charWidth;
+}
+
+void CG_DrawChar( float x, float y, int width, int height, int ch ) {
 	int row, col;
 	float frow, fcol;
 	float size;
 	float	ax, ay, aw, ah;
+	glyphInfo_t *glyph;
+	float scalex, scaley;
 
 	ch &= 255;
 
 	if ( ch == ' ' ) {
+		return;
+	}
+
+	// TTF sized from height so HUD text stays square on widescreen.
+	// Use pitch (left bearing) + xSkip advance — without pitch, thin
+	// glyphs like '!' sit against the previous letter and leave a hole.
+	if ( cgs.media.limboFont2.glyphs[ch].glyph ) {
+		glyph = &cgs.media.limboFont2.glyphs[ch];
+		scalex = height / 65.f * cgs.media.limboFont2.glyphScale;
+		scaley = scalex;
+		ax = x + glyph->pitch * scalex;
+		ay = y + height - glyph->top * scaley;
+		CG_Text_PaintChar_Ext( ax, ay, glyph->imageWidth, glyph->imageHeight,
+			scalex, scaley, glyph->s, glyph->t, glyph->s2, glyph->t2, glyph->glyph );
 		return;
 	}
 
@@ -480,7 +561,7 @@ void CG_DrawStringExt( int x, int y, const char *string, float *setColor,
 		qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars ) {
 	vec4_t		color;
 	const char	*s;
-	int			xx;
+	float		xx;
 	int			cnt;
 
 	if (maxChars <= 0)
@@ -501,7 +582,7 @@ void CG_DrawStringExt( int x, int y, const char *string, float *setColor,
 			}
 			CG_DrawChar( xx + 1, y + 1, charWidth, charHeight, *s );
 			cnt++;
-			xx += charWidth;
+			xx += CG_DrawCharStep( *s, charWidth, charHeight );
 			s++;
 		}
 	}
@@ -529,7 +610,7 @@ void CG_DrawStringExt( int x, int y, const char *string, float *setColor,
 			continue;
 		}
 		CG_DrawChar( xx, y, charWidth, charHeight, *s );
-		xx += charWidth;
+		xx += CG_DrawCharStep( *s, charWidth, charHeight );
 		cnt++;
 		s++;
 	}
@@ -551,7 +632,7 @@ void CG_DrawStringExt_Shadow( int x, int y, const char *string, const float *set
 		qboolean forceColor, int shadow, int charWidth, int charHeight, int maxChars ) {
 	vec4_t		color;
 	const char	*s;
-	int			xx;
+	float		xx;
 	int			cnt;
 
 	if (maxChars <= 0)
@@ -570,9 +651,9 @@ void CG_DrawStringExt_Shadow( int x, int y, const char *string, const float *set
 				s += 2;
 				continue;
 			}
-			CG_DrawChar2( xx + ((charWidth<12)?1:2), y + ((charHeight<12)?1:2), charWidth, charHeight, *s );
+			CG_DrawChar( xx + ((charWidth<12)?1:2), y + ((charHeight<12)?1:2), charWidth, charHeight, *s );
 			cnt++;
-			xx += charWidth;
+			xx += CG_DrawCharStep( *s, charWidth, charHeight );
 			s++;
 		}
 	}
@@ -596,8 +677,8 @@ void CG_DrawStringExt_Shadow( int x, int y, const char *string, const float *set
 			s += 2;
 			continue;
 		}
-		CG_DrawChar2( xx, y, charWidth, charHeight, *s );
-		xx += charWidth;
+		CG_DrawChar( xx, y, charWidth, charHeight, *s );
+		xx += CG_DrawCharStep( *s, charWidth, charHeight );
 		cnt++;
 		s++;
 	}
@@ -622,7 +703,7 @@ void CG_DrawStringExt3( int x, int y, const char *string, const float *setColor,
 		qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars ) {
 	vec4_t		color;
 	const char	*s;
-	int			xx;
+	float		xx;
 	int			cnt;
 
 	if (maxChars <= 0)
@@ -632,11 +713,15 @@ void CG_DrawStringExt3( int x, int y, const char *string, const float *setColor,
 	xx = 0;
 	
 	while (*s) {
-		xx += charWidth;
+		if ( Q_IsColorString( s ) ) {
+			s += 2;
+			continue;
+		}
+		xx += CG_DrawCharStep( *s, charWidth, charHeight );
 		s++;
 	}
 	
-	x -= xx; 
+	x -= int(xx); 
 	
 	s = string;
 	xx = x;
@@ -654,9 +739,9 @@ void CG_DrawStringExt3( int x, int y, const char *string, const float *setColor,
 				s += 2;
 				continue;
 			}
-			CG_DrawChar2( xx + ((charWidth<12)?1:2), y + ((charHeight<12)?1:2), charWidth, charHeight, *s );
+			CG_DrawChar( xx + ((charWidth<12)?1:2), y + ((charHeight<12)?1:2), charWidth, charHeight, *s );
 			cnt++;
-			xx += charWidth;
+			xx += CG_DrawCharStep( *s, charWidth, charHeight );
 			s++;
 		}
 	}
@@ -680,8 +765,8 @@ void CG_DrawStringExt3( int x, int y, const char *string, const float *setColor,
 			s += 2;
 			continue;
 		}
-		CG_DrawChar2( xx, y, charWidth, charHeight, *s );
-		xx += charWidth;
+		CG_DrawChar( xx, y, charWidth, charHeight, *s );
+		xx += CG_DrawCharStep( *s, charWidth, charHeight );
 		cnt++;
 		s++;
 	}

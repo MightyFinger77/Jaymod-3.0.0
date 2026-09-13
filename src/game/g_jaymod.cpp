@@ -1769,7 +1769,9 @@ void G_AuthCheck( gentity_t *ent, char *version ) {
 	if( !*version )
 		version = "[MISSING INFO]";
 	else if( !Q_stricmp( version, JAYMOD_title ) ||
+	         !Q_stricmp( version, "Jaymod 3.1.0" ) ||
 	         !Q_stricmp( version, "Jaymod 3.0.0" ) ||
+	         !Q_stricmp( version, "Jaymod 2.3.2" ) ||
 	         !Q_stricmp( version, "Jaymod 2.3.1" ) ||
 	         !Q_stricmp( version, "Jaymod 2.3.0" ))
 		version = "";

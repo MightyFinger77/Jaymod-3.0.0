@@ -2735,6 +2735,7 @@ qboolean G_LandmineSnapshotCallback( int entityNum, int clientNum );
 #include <game/cmd/public.h>
 #include <game/cvar/public.h>
 #include <game/str/public.h>
+#include <game/enh/enh.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

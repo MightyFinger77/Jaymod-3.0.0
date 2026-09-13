@@ -434,7 +434,21 @@ convertFlagAndAppend( const string& flags, string& out )
 
             case 'M':  privs.push_back( "c/crazygravity"      );
                        privs.push_back( "c/panzerwar"         );
-                       privs.push_back( "c/sniperwar"         ); break;
+                       privs.push_back( "c/sniperwar"         );
+                       privs.push_back( "c/riflewar"          );
+                       privs.push_back( "c/pistolwar"         );
+                       privs.push_back( "c/pumpgunwar"        );
+                       privs.push_back( "c/freeze"            );
+                       privs.push_back( "c/unfreeze"          );
+                       privs.push_back( "c/disarm"            );
+                       privs.push_back( "c/warn"              );
+                       privs.push_back( "c/crazydisguise"     );
+                       privs.push_back( "c/country"           );
+                       privs.push_back( "c/impact"            );
+                       privs.push_back( "c/antirush"          );
+                       privs.push_back( "c/antirush_add"      );
+                       privs.push_back( "c/antirush_del"      );
+                       privs.push_back( "c/midget"            ); break;
 
             case 'd':  privs.push_back( "c/disorient"         );
                        privs.push_back( "c/orient"            ); break;

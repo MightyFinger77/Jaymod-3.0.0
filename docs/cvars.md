@@ -10,6 +10,14 @@ Cvars added or changed after 2.2.0 are listed first. The long table below is the
 | --- | --- | --- | --- |
 | `lua_modules` | `""` | 3.0.0 | Space-separated Lua scripts to load from the mod folder, `luascripts/`, or `lua/`. |
 | `lua_allowedModules` | `""` | 3.0.0 | If set, only scripts whose SHA1 appears in this list are loaded. Empty = allow all. |
+| `g_em_votemap` | `0` | 3.1.0 | `1` limits callvote to `map`, `nextmap`, `maprestart`, `campaign`. |
+| `g_adrenenalinecls` | `2` | 3.1.0 | Published spelling. Bits: 1 soldier, 2 medic, 4 engineer, 8 fieldops, 16 covert. |
+| `g_drawAttackerHP` | `0` | 3.1.0 | `1` console, `2` on-screen CPM. |
+| `g_countryflags` | `0` | 3.1.0 | `1` writes country id into userinfo when `GeoLite2-City.mmdb`, `GeoLite2-Country.mmdb`, or legacy `GeoIP.dat` is next to `qagame`. |
+| `g_flagsbehaviour` | `""` | 3.1.0 | `random` = random bot flag. Otherwise treated as an IP to look up for bots. |
+| `g_rifleWar` | `0` | 3.1.0 | Rifle-only spawn (`!riflewar`). |
+| `g_pistolWar` | `0` | 3.1.0 | Pistol-only spawn (`!pistolwar`). |
+| `g_pumpgunWar` | `0` | 3.1.0 | M97-only spawn (`!pumpgunwar`). |
 | `g_requireClientVersion` | `0` | 2.3.0 | `1` rejects clients whose Jaymod version does not match the server. Keep `0` if 2.2.0 / 2.3.0 pk3s are still in the wild. |
 | `g_dbAutoSave` | `300` | 2.3.0 | Seconds between automatic Admin DB saves. `0` disables. |
 | `g_aimSpreadTurnScale` | `1.0` | 2.3.0 | Scales turn spread. `1.0` is the frame-rate-independent amount. |
@@ -18,6 +26,7 @@ Cvars added or changed after 2.2.0 are listed first. The long table below is the
 | `g_panzerMapLimit` | `0` | 2.3.0 | Caps consecutive maps one player can hold a panzer. |
 | `g_debugBullets` | `0` | 2.3.0 | Dev-only bullet path overlay (cheats / devmap). |
 | `cg_cycleBinoculars` | `0` | 2.3.0 | `0` skips binoculars when cycling weapons. |
+| `jay_fixedAspect` | `1` | 3.1.0 | Client. `1` (or unset) = widescreen HUD/UI without stretch. `0` = old stretched 640×480. ETL’s archived `cg_fixedAspect 0` is ignored; use this cvar. |
 
 `cg_noVoiceChats` is a bit field as of 2.3.0: `0` all, `1` none, `3` team/fireteam only.
 

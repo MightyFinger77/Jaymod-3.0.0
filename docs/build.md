@@ -25,7 +25,7 @@ Outputs (MinGW: `build/`, MSVC: `build/Release/`):
 
 Also copy `*_x86_64.dll` names for older ETL loaders.
 
-Keep the **32-bit** `cgame_mp_x86.dll` / `ui_mp_x86.dll` from the 2.3.0 / 2.2.0 pk3 in `jaymod-3.0.0.pk3` so vanilla ET clients still work. Do not put `qagame` in the pk3.
+`tools/pack-release.ps1` also builds **32-bit** `cgame_mp_x86.dll` / `ui_mp_x86.dll` with the i686 MinGW in `tools/mingw32` (`build-x86/`) and packs those into the pk3. Vanilla ET / 32-bit ETL need those, not the leftover 2.3.0 binaries. Do not put `qagame` in the pk3.
 
 `FEATURE_LUA` is on for `qagame`. Lua 5.1 is compiled in from `src/lua/`.
 
@@ -41,4 +41,6 @@ Produces `qagame.mp.x86_64`, `cgame.mp.x86_64`, `ui.mp.x86_64`. Omni-bot on Linu
 
 ## Version stamp
 
-`cmake/project.h.in` sets `JAYMOD_version` / `jaymod-3.0.0` / `jaymod-3.0.0.pk3`. Bump those plus `project/info.db` if you cut a new point release.
+`cmake/project.h.in` sets `JAYMOD_version` / `jaymod-3.1.0` / `jaymod-3.1.0.pk3`. Bump those plus `project/info.db` if you cut a new point release.
+
+`tools/pack-release.ps1` rebuilds 32-bit `cgame`/`ui` and stamps them `Jaymod 3.1.0`. A leftover 2.3.0 / 3.0.0 x86 module aborts in `CG_Init` on 32-bit ETL.
