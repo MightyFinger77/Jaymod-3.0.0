@@ -1,0 +1,37 @@
+#ifndef BASE_PROJECT_H
+#define BASE_PROJECT_H
+
+#define JAYMOD_name           "Jaymod"
+#define JAYMOD_namef          "jaymod"
+#define JAYMOD_namex          "^xJay^4mod"
+#define JAYMOD_website        "http://jaymod.clanfu.org"
+#define JAYMOD_irc            "irc.freenode.net #jaymod"
+#define JAYMOD_author         "RNGesus"
+#define JAYMOD_authorOrig     "Jaybird"
+#define JAYMOD_copyright      "Copyright (c) 2005-2011 Jaybird. 3.0.0 (c) 2026 RNGesus. Lua/x64 fork."
+#define JAYMOD_versionMajor   "3"
+#define JAYMOD_versionMinor   "0"
+#define JAYMOD_versionPoint   "0"
+#define JAYMOD_versionHex     0x03000000
+#define JAYMOD_buildDate      "@JAYMOD_BUILD_DATE@"
+#define JAYMOD_buildStability "development"
+#define JAYMOD_buildTarget    "@JAYMOD_BUILD_TARGET@"
+#define JAYMOD_repoURL        ""
+#define JAYMOD_repoUUID       ""
+#define JAYMOD_repoRev        "0"
+#define JAYMOD_repoLCRev      "0"
+#define JAYMOD_repoLCDate     ""
+#define JAYMOD_platformName   "@JAYMOD_PLATFORM_NAME@"
+#define JAYMOD_platformNamef  "@JAYMOD_PLATFORM_NAMEF@"
+#define JAYMOD_title          "Jaymod 3.0.0"
+#define JAYMOD_titlex         "^xJay^4mod ^f3.0.0"
+#define JAYMOD_version        "3.0.0"
+#define JAYMOD_versionx       "^f3.0.0"
+#define JAYMOD_packageBase    "jaymod-3.0.0"
+#define JAYMOD_packageBasev   "jaymod-3.0.0-@JAYMOD_BUILD_TARGET@"
+#define JAYMOD_pk3            "jaymod-3.0.0.pk3"
+
+#define JAYMOD_@JAYMOD_PLATFORM_DEFINE@
+#define JAYMOD_DEVELOPMENT
+
+#endif
