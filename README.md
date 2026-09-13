@@ -14,6 +14,8 @@ Lineage: official **Jaymod 2.2.0** (Jaybird, 2011) → **2.3.0** (RNGesus, 2026)
 | **This archive’s binaries** | **Windows x64 only** |
 | **License** | Apache 2.0 + original id Software terms |
 
+**Download:** [https://gixclan.net/archive/8875/jaymod-3-0-0](https://gixclan.net/archive/8875/jaymod-3-0-0)
+
 ## What you get
 
 Release zip: `jaymod-3.1.0-64bit-lua.zip`
