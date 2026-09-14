@@ -140,6 +140,159 @@ int reloadableWeapons[] = {
 ammotable_t ammoTableMP_BACKUP[WP_NUM_WEAPONS];
 #endif
 
+weaponAmmoOverride_t bg_weaponAmmoOverride[WP_NUM_WEAPONS];
+
+void BG_ClearWeaponAmmoOverrides( void ) {
+	memset( bg_weaponAmmoOverride, 0, sizeof(bg_weaponAmmoOverride) );
+}
+
+qboolean BG_AddWeaponAmmoTier( int weapon, const weaponAmmoTier_t *tier ) {
+	weaponAmmoOverride_t *o;
+
+	if ( weapon <= WP_NONE || weapon >= WP_NUM_WEAPONS || !tier )
+		return qfalse;
+	o = &bg_weaponAmmoOverride[weapon];
+	if ( o->nTiers >= BG_AMMO_MAX_TIERS )
+		return qfalse;
+	o->tiers[o->nTiers] = *tier;
+	o->nTiers++;
+	o->used = qtrue;
+	return qtrue;
+}
+
+void BG_ApplyWeaponAmmoOverrides( void ) {
+	int i;
+
+	for ( i = 0; i < WP_NUM_WEAPONS; i++ ) {
+		weaponAmmoTier_t *t;
+
+		if ( !bg_weaponAmmoOverride[i].used || bg_weaponAmmoOverride[i].nTiers <= 0 )
+			continue;
+		t = &bg_weaponAmmoOverride[i].tiers[0];
+		if ( t->maxclip >= 0 ) {
+			ammoTableMP[i].maxclip = t->maxclip;
+			ammoTableMP[i].defaultStartingClip = t->maxclip;
+		}
+		if ( t->maxammo >= 0 ) {
+			ammoTableMP[i].maxammo = t->maxammo;
+			ammoTableMP[i].defaultStartingAmmo = t->maxammo;
+		}
+	}
+}
+
+static void BG_ParseOneAmmoTier( int weap, const char *tier ) {
+	weaponAmmoTier_t t;
+	const char *p;
+	int clip, ammo;
+
+	memset( &t, 0, sizeof(t) );
+	t.maxclip = -1;
+	t.maxammo = -1;
+	if ( sscanf( tier, "%d,%d", &clip, &ammo ) != 2 )
+		return;
+	t.maxclip = clip;
+	t.maxammo = ammo;
+	p = tier;
+	while ( *p && *p != ',' )
+		p++;
+	if ( *p == ',' )
+		p++;
+	while ( *p && *p != ',' && *p != '+' )
+		p++;
+	while ( ( *p == ',' || *p == '+' ) && t.nNeeds < BG_AMMO_MAX_NEEDS ) {
+		int sk, xp;
+
+		p++;
+		if ( sscanf( p, "%d,%d", &sk, &xp ) != 2 )
+			break;
+		t.skill[t.nNeeds] = sk;
+		t.xp[t.nNeeds] = xp;
+		t.nNeeds++;
+		while ( *p && *p != ',' && *p != '+' )
+			p++;
+		if ( *p == ',' ) {
+			p++;
+			while ( *p && *p != ',' && *p != '+' )
+				p++;
+		}
+	}
+	BG_AddWeaponAmmoTier( weap, &t );
+}
+
+void BG_ParseWeaponAmmoConfig( const char *str ) {
+	const char *p;
+
+	BG_ClearWeaponAmmoOverrides();
+	if ( !str || !str[0] )
+		return;
+
+	p = str;
+	while ( *p ) {
+		int weap;
+		char weapBuf[256];
+		char *slash;
+		int n;
+
+		while ( *p == ' ' || *p == '\n' || *p == '\r' || *p == '\t' )
+			p++;
+		if ( !*p )
+			break;
+		n = 0;
+		while ( p[n] && p[n] != ' ' && p[n] != '\n' && p[n] != '\r' && p[n] != '\t' && n < (int)sizeof(weapBuf) - 1 ) {
+			weapBuf[n] = p[n];
+			n++;
+		}
+		weapBuf[n] = 0;
+		p += n;
+		if ( sscanf( weapBuf, "%d", &weap ) != 1 )
+			continue;
+		slash = strchr( weapBuf, '/' );
+		while ( slash ) {
+			char *next = strchr( slash + 1, '/' );
+			if ( next )
+				*next = 0;
+			BG_ParseOneAmmoTier( weap, slash + 1 );
+			slash = next;
+		}
+	}
+}
+
+void BG_WriteWeaponAmmoConfig( char *buf, int buflen ) {
+	int i;
+	int used = 0;
+
+	if ( !buf || buflen <= 0 )
+		return;
+	buf[0] = 0;
+	for ( i = 0; i < WP_NUM_WEAPONS; i++ ) {
+		char chunk[192];
+		int t, add;
+		weaponAmmoOverride_t *o = &bg_weaponAmmoOverride[i];
+
+		if ( !o->used || o->nTiers <= 0 )
+			continue;
+		Com_sprintf( chunk, sizeof(chunk), "%s%d", used ? " " : "", i );
+		for ( t = 0; t < o->nTiers; t++ ) {
+			char part[64];
+			int n;
+
+			Com_sprintf( part, sizeof(part), "/%d,%d", o->tiers[t].maxclip, o->tiers[t].maxammo );
+			for ( n = 0; n < o->tiers[t].nNeeds; n++ ) {
+				char need[32];
+				Com_sprintf( need, sizeof(need), "%c%d,%d", n ? '+' : ',',
+					o->tiers[t].skill[n], o->tiers[t].xp[n] );
+				Q_strcat( part, sizeof(part), need );
+			}
+			Q_strcat( chunk, sizeof(chunk), part );
+		}
+		add = (int)strlen( chunk );
+		if ( used + add + 1 >= buflen )
+			break;
+		Q_strcat( buf, buflen, chunk );
+		used += add;
+	}
+}
+
 // Separate table for SP and MP allow us to make the ammo and med packs function differently and may allow use to balance
 // weapons separately for each game.
 // Gordon: changed to actually use the maxammo values
@@ -3232,7 +3385,7 @@ weapon_t BG_GrenadeTypeForTeam( team_t team ) {
 }
 
 // Gordon: setting numOfClips = 0 allows you to check if the client needs ammo, but doesnt give any
-qboolean BG_AddMagicAmmo( playerState_t *ps, int *skill, int teamNum, int numOfClips ) {
+qboolean BG_AddMagicAmmo( playerState_t *ps, int *skill, int teamNum, int numOfClips, const float *skillpoints ) {
 	int			i, weapon;
 	qboolean	ammoAdded = qfalse;
 	int			maxammo;
@@ -3314,7 +3467,7 @@ qboolean BG_AddMagicAmmo( playerState_t *ps, int *skill, int teamNum, int numOfC
         if (!COM_BitCheck( ps->weapons, weapon ))
             continue;
 
-        maxammo = BG_MaxAmmoForWeapon( (weapon_t)weapon, skill );
+        maxammo = BG_MaxAmmoForWeapon( (weapon_t)weapon, skill, skillpoints );
 
         // handle clip vs. ammo
         switch (weapon) {
@@ -3361,7 +3514,7 @@ qboolean BG_AddMagicAmmo( playerState_t *ps, int *skill, int teamNum, int numOfC
                     }
 
                     // add and limit check
-                    ps->ammo[clip] += weapNumOfClips * GetAmmoTableData(weapon)->maxclip;
+                    ps->ammo[clip] += weapNumOfClips * BG_MaxClipForWeapon( (weapon_t)weapon, skill, skillpoints );
                     if (ps->ammo[clip] > maxammo) {
                         ps->ammo[clip] = maxammo;
                     }
@@ -3517,7 +3670,7 @@ Returns false if the item should not be picked up.
 This needs to be the same for client side prediction and server use.
 ================
 */
-qboolean	BG_CanItemBeGrabbed( const entityState_t *ent, const playerState_t *ps, int *skill, int teamNum ) {
+qboolean	BG_CanItemBeGrabbed( const entityState_t *ent, const playerState_t *ps, int *skill, int teamNum, const float *skillpoints ) {
 	gitem_t	*item;
 
 	if ( ent->modelindex < 1 || ent->modelindex >= bg_numItems ) {
@@ -3533,7 +3686,7 @@ qboolean	BG_CanItemBeGrabbed( const entityState_t *ent, const playerState_t *ps,
 			// xkan, 11/21/2002 - only pick up if ammo is not full, numClips is 0, so ps will
 			// NOT be changed (I know, it places the burden on the programmer, rather than the 
 			// compiler, to ensure that).
-			return BG_AddMagicAmmo( (playerState_t *)ps, skill, teamNum, 0);	// Arnout: had to cast const away
+			return BG_AddMagicAmmo( (playerState_t *)ps, skill, teamNum, 0, skillpoints );	// Arnout: had to cast const away
 		}
 
 		return qtrue;
@@ -4821,9 +4974,80 @@ splinePath_t* BG_GetSplineData( int number, qboolean* backwards ) {
 	return &splinePaths[number];
 }
 
-int BG_MaxAmmoForWeapon( weapon_t weaponNum, int *skill ) {
+static qboolean BG_AmmoNeedMet( int sk, int xp, int *skill, const float *skillpoints ) {
+	float have = 0;
+
+	if ( sk < 0 )
+		return qtrue;
+	if ( sk >= SK_NUM_SKILLS )
+		return qfalse;
+	if ( skillpoints )
+		have = skillpoints[sk];
+	if ( have <= 0.f && skill && skill[sk] > 0 && skill[sk] < NUM_SKILL_LEVELS )
+		have = (float)skillLevels[sk][skill[sk]];
+
+	if ( xp == BG_AMMO_XP_MAX ) {
+		int maxxp = 0;
+		int i;
+
+		for ( i = 1; i < NUM_SKILL_LEVELS; i++ ) {
+			if ( skillLevels[sk][i] < 0 )
+				break;
+			maxxp = skillLevels[sk][i];
+		}
+		return ( have + 0.0001f >= (float)maxxp ) ? qtrue : qfalse;
+	}
+	if ( xp < 0 )
+		return ( skill && skill[sk] >= 1 ) ? qtrue : qfalse;
+	return ( have + 0.0001f >= (float)xp ) ? qtrue : qfalse;
+}
+
+static qboolean BG_AmmoTierMet( const weaponAmmoTier_t *tier, int *skill, const float *skillpoints ) {
+	int i;
+
+	for ( i = 0; i < tier->nNeeds; i++ ) {
+		if ( !BG_AmmoNeedMet( tier->skill[i], tier->xp[i], skill, skillpoints ) )
+			return qfalse;
+	}
+	return qtrue;
+}
+
+static const weaponAmmoTier_t *BG_BestAmmoTier( weapon_t weaponNum, int *skill, const float *skillpoints ) {
+	const weaponAmmoOverride_t *o = &bg_weaponAmmoOverride[weaponNum];
+	int i;
+
+	if ( !o->used || o->nTiers <= 0 )
+		return NULL;
+	for ( i = o->nTiers - 1; i >= 0; i-- ) {
+		if ( BG_AmmoTierMet( &o->tiers[i], skill, skillpoints ) )
+			return &o->tiers[i];
+	}
+	return NULL;
+}
+
+int BG_MaxClipForWeapon( weapon_t weaponNum, int *skill, const float *skillpoints ) {
+	const weaponAmmoTier_t *t = BG_BestAmmoTier( weaponNum, skill, skillpoints );
+
+	if ( t && t->maxclip >= 0 )
+		return t->maxclip;
+	return GetAmmoTableData(weaponNum)->maxclip;
+}
+
+int BG_MaxAmmoForWeapon( weapon_t weaponNum, int *skill, const float *skillpoints ) {
+	const weaponAmmoTier_t *t = BG_BestAmmoTier( weaponNum, skill, skillpoints );
+	int base = GetAmmoTableData(weaponNum)->maxammo;
+	int clipBonus = GetAmmoTableData(weaponNum)->maxclip;
+
+	if ( t ) {
+		if ( t->maxammo >= 0 )
+			return t->maxammo;
+		return base;
+	}
+
+	if ( !skill )
+		return base;
+
 	switch( weaponNum ) {
-		//case WP_KNIFE:
 		case WP_LUGER:
 		case WP_COLT:
 		case WP_STEN:
@@ -4832,77 +5056,47 @@ int BG_MaxAmmoForWeapon( weapon_t weaponNum, int *skill ) {
 		case WP_KAR98:
 		case WP_SILENCED_COLT:
 			if( skill[SK_LIGHT_WEAPONS] >= 1 )
-				return( GetAmmoTableData(weaponNum)->maxammo + GetAmmoTableData(weaponNum)->maxclip );
-			else
-				return( GetAmmoTableData(weaponNum)->maxammo );
-			break;
+				return base + clipBonus;
+			return base;
 		case WP_MP40:
 		case WP_THOMPSON:
 		case WP_M97:
 			if( skill[SK_FIRST_AID] >= 1 || skill[SK_LIGHT_WEAPONS] >= 1 )
-				return( GetAmmoTableData(weaponNum)->maxammo + GetAmmoTableData(weaponNum)->maxclip );
-			else
-				return( GetAmmoTableData(weaponNum)->maxammo );
-			break;
+				return base + clipBonus;
+			return base;
 		case WP_M7:
 		case WP_GPG40:
 			if( skill[SK_EXPLOSIVES_AND_CONSTRUCTION] >= 1 )
-				return( GetAmmoTableData(weaponNum)->maxammo + 4 );
-			else
-				return( GetAmmoTableData(weaponNum)->maxammo );
-			break;
+				return base + 4;
+			return base;
 		case WP_GRENADE_PINEAPPLE:
 		case WP_GRENADE_LAUNCHER:
-			// FIXME: this is class dependant, not ammo table
 			if( skill[SK_EXPLOSIVES_AND_CONSTRUCTION] >= 1 )
-				return( GetAmmoTableData(weaponNum)->maxammo + 4 );
+				return base + 4;
 			else if( skill[SK_FIRST_AID] >= 1 )
-				return( GetAmmoTableData(weaponNum)->maxammo + 1 );
-			else
-				return( GetAmmoTableData(weaponNum)->maxammo );
-			break;
-		/*case WP_MOBILE_MG42:
-		case WP_PANZERFAUST:
-		case WP_FLAMETHROWER:
-			if( skill[SK_HEAVY_WEAPONS] >= 1 )
-				return( GetAmmoTableData(weaponNum)->maxammo + GetAmmoTableData(weaponNum)->maxclip );
-			else
-				return( GetAmmoTableData(weaponNum)->maxammo );
-			break;
-		case WP_MORTAR:
-		case WP_MORTAR_SET:
-			if( skill[SK_HEAVY_WEAPONS] >= 1 )
-				return( GetAmmoTableData(weaponNum)->maxammo + 2 );
-			else
-				return( GetAmmoTableData(weaponNum)->maxammo );
-			break;*/
+				return base + 1;
+			return base;
 		case WP_MEDIC_SYRINGE:
 			if( skill[SK_FIRST_AID] >= 2 )
-				return( GetAmmoTableData(weaponNum)->maxammo + 2 );
-			else
-				return( GetAmmoTableData(weaponNum)->maxammo );
-			break;
+				return base + 2;
+			return base;
 		case WP_GARAND:
 		case WP_K43:
 		case WP_FG42:
 			if( skill[SK_MILITARY_INTELLIGENCE_AND_SCOPED_WEAPONS] >= 1 || skill[SK_LIGHT_WEAPONS] >= 1 )
-				return( GetAmmoTableData(weaponNum)->maxammo + GetAmmoTableData(weaponNum)->maxclip );
-			else
-				return( GetAmmoTableData(weaponNum)->maxammo );
-			break;
+				return base + clipBonus;
+			return base;
 		case WP_GARAND_SCOPE:
 		case WP_K43_SCOPE:
 		case WP_FG42SCOPE:
 			if( skill[SK_MILITARY_INTELLIGENCE_AND_SCOPED_WEAPONS] >= 1 )
-				return( GetAmmoTableData(weaponNum)->maxammo + GetAmmoTableData(weaponNum)->maxclip );
-			else
-				return( GetAmmoTableData(weaponNum)->maxammo );
-			break;
+				return base + clipBonus;
+			return base;
 		default:
 			break;
 	}
 
-	return( GetAmmoTableData(weaponNum)->maxammo );
+	return base;
 }
 
 /*

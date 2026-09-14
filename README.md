@@ -24,7 +24,7 @@ Release zip: `jaymod-3.1.0-64bit-lua.zip`
 jaymod/jaymod-3.1.0.pk3          clients download this
 jaymod/qagame_mp_x64.dll         required by 64-bit etlded
 jaymod/SERVER.txt                short install note
-jaymod/ModEnhConfig.xml          EnhMod spawn / common settings
+jaymod/ModEnhConfig.xml          EnhMod spawn / common settings / optional ammo tiers
 jaymod/enhmod_*.db               commands, levels, antirush
 jaymod/forcecvarfile.cfg         forcecvar lines
 ```
@@ -82,9 +82,11 @@ The API follows the [published ET: Legacy Lua docs](https://etlegacy-lua-docs.re
 
 - EnhMod 1.0.9d is compiled into `qagame` from the published XML/DB formats. No `jaymod_enh` hook DLL.
 - Drop-in: `ModEnhConfig.xml`, `enhmod_commands.db`, `enhmod_level.db`, `enhmod_admin.db`, `enhmod_antirush.db`, `forcecvarfile.cfg`
+- Optional `<weaponammo>` in `ModEnhConfig.xml`: magazine and reserve caps by skill XP (multiple AND tiers; highest match wins)
 - Builtins also accept Jaymod shrubbot letter `M` (same group as sniperwar)
 - Country/city: not shipped. Each operator downloads their own `GeoLite2-City.mmdb` and/or `GeoLite2-Country.mmdb` from MaxMind and puts it next to `qagame`. City is preferred (includes country). Legacy `GeoIP.dat` still works.
-- Widescreen HUD/UI (`jay_fixedAspect`, default `1`): ETJump-style layout — no stretch, centered menus/limbo/load/exit/tab, TTF in-game text. `0` is the old stretched look. Do not use ETL’s archived `cg_fixedAspect`.
+- Widescreen HUD/UI (`jay_fixedAspect`, default `1`): ETJump-style layout — no stretch, centered menus/limbo/load/exit/tab, TTF in-game text. Centered messages (first blood, center print, objectives) use real glyph width. `0` is the old stretched look. Do not use ETL’s archived `cg_fixedAspect`.
+- Spectators can open the **V** vsay menu and send global vsay. Team / fireteam vsay stays off. `match_mutespecs` still applies.
 
 ## What 3.0.0 already added
 
@@ -129,7 +131,7 @@ More: [docs/build.md](docs/build.md).
 
 | Page | Contents |
 | --- | --- |
-| [docs/server.md](docs/server.md) | Install, homepath, clients, Omni-bot, Enhanced Mod |
+| [docs/server.md](docs/server.md) | Install, homepath, clients, Omni-bot, Enhanced Mod, ammo tiers |
 | [docs/lua.md](docs/lua.md) | Cvars, callbacks, `et.*` API |
 | [docs/changelog.md](docs/changelog.md) | 2.2.0 → 2.3.0 → 3.0.0 → 3.1.0 |
 | [docs/cvars.md](docs/cvars.md) | New cvars plus the classic 2.2.0 list |

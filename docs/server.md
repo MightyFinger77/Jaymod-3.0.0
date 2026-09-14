@@ -57,7 +57,9 @@ A 32-bit client never loads the x64 DLLs. They join the same 64-bit `etlded`.
 
 This Windows pack does **not** include Linux 64-bit `cgame.mp.x86_64.so` / `ui.mp.x86_64.so`.
 
-Widescreen HUD is in the client modules. `jay_fixedAspect` defaults to `1`. ETL’s archived `cg_fixedAspect 0` does not turn it off. Set `jay_fixedAspect 0` only if you want the old stretched look.
+Widescreen HUD is in the client modules. `jay_fixedAspect` defaults to `1`. ETL’s archived `cg_fixedAspect 0` does not turn it off. Set `jay_fixedAspect 0` only if you want the old stretched look. Centered in-game messages (first blood, center print, objectives, Connection Interrupted) use real TTF width so they sit on the screen center, not the old 8px-cell estimate.
+
+Spectators can press **V** for the vsay menu and send global vsay. Team / fireteam vsay stays blocked. `match_mutespecs` still decides whether players hear spec voice.
 
 ## Lua (optional)
 
@@ -97,7 +99,42 @@ EnhMod 1.0.9d is **built into this `qagame`**. Do not load `jaymod_enh.dll` / `.
 
 Put the published files next to `qagame` (`ModEnhConfig.xml`, `enhmod_*.db`, `forcecvarfile.cfg`). Builtin flag letters are in `commands_flags.txt`. Jaymod shrubbot letter **`M`** also grants those builtins. Custom commands use `enhmod_admin.db` / `enhmod_level.db` levels. Connect IP/country/version is shown only to levels whose flags include **`I`** (and the server console). `advancedplayerinfo` must be true. Add `I` to existing `enhmod_level.db` admin flags if that file was already on the server.
 
+qagame will not overwrite an existing `ModEnhConfig.xml`. Add new blocks yourself.
+
 Country / GeoIP is **not in the zip**. Each operator downloads their own free MaxMind GeoLite2 files (binary `.mmdb`) and puts them next to `qagame`. `GeoLite2-City.mmdb` gives country + city. `GeoLite2-Country.mmdb` is country only. If both are present, City is used. We cannot redistribute those files. See [changelog](changelog.md).
+
+### Weapon ammo tiers
+
+Optional `<weaponammo>` sets magazine (`maxclip`) and reserve (`maxammo`) **caps**. It is not spawn starting ammo. Spawn amounts stay on `<entity>` as `<ammo>` / `<ammoclip>`.
+
+List `<tier>`s in order. The highest matching tier wins. Every `<need>` on a tier is AND. `xp` is that skill’s XP, not total XP. `xp="max"` is the last enabled rung of that skill (`g_levels_*`). Up to 6 tiers per gun, 3 needs per tier.
+
+Skill names: `light_weapons`, `medic`, `engineer`, `soldier`, `fieldops`, `covertops`, `battle_sense`.
+
+```xml
+<weaponammo>
+	<weapon name="WP_MP40">
+		<tier maxclip="30" maxammo="90"/>
+		<tier maxclip="30" maxammo="120">
+			<need skill="light_weapons" xp="200"/>
+		</tier>
+		<tier maxclip="45" maxammo="360">
+			<need skill="light_weapons" xp="max"/>
+			<need skill="battle_sense" xp="max"/>
+		</tier>
+	</weapon>
+</weaponammo>
+```
+
+That example is 30/90 at 0 XP, 30/120 at 200 Light Weapons, 45/360 at max Light Weapons **and** max Battle Sense.
+
+The old one-line form still works. `skill` / `skill2` are OR:
+
+```xml
+<weapon name="WP_THOMPSON" maxclip="30" maxammo="90" maxammo_skilled="120" skill="light_weapons" skill2="medic" xp="20"/>
+```
+
+If a weapon has `<weaponammo>` tiers, the vanilla skill-1 extra clip at spawn is skipped so it does not bypass your gates. Clients need this 3.1.0 pk3 so reload prediction matches the server.
 
 ## Checklist
 

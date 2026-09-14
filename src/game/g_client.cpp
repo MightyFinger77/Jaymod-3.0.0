@@ -711,6 +711,10 @@ AddExtraSpawnAmmo
 */
 static void AddExtraSpawnAmmo( gclient_t *client, weapon_t weaponNum)
 {
+	// XML <weaponammo> tiers own the ammo curve for this gun.
+	if( weaponNum > WP_NONE && weaponNum < WP_NUM_WEAPONS && bg_weaponAmmoOverride[weaponNum].used )
+		return;
+
 	switch( weaponNum ) {
 		//case WP_KNIFE:
 		case WP_LUGER:

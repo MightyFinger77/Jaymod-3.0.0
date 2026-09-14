@@ -322,6 +322,12 @@ void CG_ParseSkillLevels( void ) {
 	}
 }
 
+void CG_ParseWeaponAmmo( void ) {
+	BG_ParseWeaponAmmoConfig( CG_ConfigString( CS_WEAPONAMMO ) );
+	ammoTableNeedsUpdate = true;
+	BG_updateAmmoTable();
+}
+
 /*
 ==================
 CG_ParseWolfinfo
@@ -688,6 +694,10 @@ void CG_ConfigStringModified( void )
 
         case CS_SKILLLEVELS:
             CG_ParseSkillLevels();
+            return;
+
+        case CS_WEAPONAMMO:
+            CG_ParseWeaponAmmo();
             return;
 
         case CS_REINFSEEDS:

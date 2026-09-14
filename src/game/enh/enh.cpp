@@ -2,6 +2,7 @@
 #include <game/enh/enh.h>
 #include <game/enh/enh_geoip.h>
 #include <game/enh/enh_defaults.h>
+#include <bgame/bg_jaymod.h>
 
 #include <cctype>
 #include <cstdio>
@@ -341,6 +342,238 @@ void parseEntities(const string& xml)
 	}
 }
 
+int skillFromName(const string& raw)
+{
+	string n = toLowerCopy(trimCopy(raw));
+	if (n.empty())
+		return -1;
+	if (n == "light_weapons" || n == "lightweapons" || n == "lw")
+		return SK_LIGHT_WEAPONS;
+	if (n == "engineer" || n == "explosives" || n == "explosives_and_construction")
+		return SK_EXPLOSIVES_AND_CONSTRUCTION;
+	if (n == "battle_sense" || n == "battlesense")
+		return SK_BATTLE_SENSE;
+	if (n == "medic" || n == "first_aid" || n == "firstaid")
+		return SK_FIRST_AID;
+	if (n == "fieldops" || n == "field_ops" || n == "signals")
+		return SK_SIGNALS;
+	if (n == "soldier" || n == "heavy_weapons" || n == "heavyweapons")
+		return SK_HEAVY_WEAPONS;
+	if (n == "covertops" || n == "covert_ops" || n == "scoped" || n == "military_intelligence")
+		return SK_MILITARY_INTELLIGENCE_AND_SCOPED_WEAPONS;
+	return -1;
+}
+
+string xmlBlock(const string& xml, const char *tag)
+{
+	string lxml = toLowerCopy(xml);
+	string open = string("<") + tag;
+	string close = string("</") + tag + ">";
+	size_t a = lxml.find(toLowerCopy(open));
+	if (a == string::npos)
+		return "";
+	size_t tagEnd = xml.find('>', a);
+	if (tagEnd == string::npos)
+		return "";
+	size_t b = lxml.find(toLowerCopy(close), tagEnd);
+	if (b == string::npos)
+		return "";
+	return xml.substr(tagEnd + 1, b - (tagEnd + 1));
+}
+
+int attrInt(const string& tag, const char *key, int missing)
+{
+	string v = attrValue(tag, key);
+	if (v.empty())
+		return missing;
+	return atoi(v.c_str());
+}
+
+int parseXpAttr(const string& tag)
+{
+	string v = toLowerCopy(attrValue(tag, "xp"));
+	if (v.empty())
+		return -1;
+	if (v == "max")
+		return BG_AMMO_XP_MAX;
+	return atoi(v.c_str());
+}
+
+string stripXmlComments(string xml)
+{
+	for (;;) {
+		size_t a = xml.find("<!--");
+		if (a == string::npos)
+			break;
+		size_t b = xml.find("-->", a);
+		if (b == string::npos) {
+			xml.erase(a);
+			break;
+		}
+		xml.erase(a, b + 3 - a);
+	}
+	return xml;
+}
+
+void addShorthandAmmoTiers(weapon_t w, const string& tag)
+{
+	weaponAmmoTier_t base;
+	weaponAmmoTier_t gated;
+	const int clip = attrInt(tag, "maxclip", -1);
+	const int ammo = attrInt(tag, "maxammo", -1);
+	const int ammoS = attrInt(tag, "maxammo_skilled", -1);
+	const int sk = skillFromName(attrValue(tag, "skill"));
+	const int sk2 = skillFromName(attrValue(tag, "skill2"));
+	const int xp = parseXpAttr(tag);
+
+	if (clip < 0 && ammo < 0 && ammoS < 0)
+		return;
+
+	memset(&base, 0, sizeof(base));
+	base.maxclip = clip;
+	base.maxammo = ammo;
+	BG_AddWeaponAmmoTier(w, &base);
+
+	if (ammoS < 0 || (sk < 0 && sk2 < 0))
+		return;
+
+	memset(&gated, 0, sizeof(gated));
+	gated.maxclip = clip;
+	gated.maxammo = ammoS;
+	gated.nNeeds = 1;
+	if (sk >= 0) {
+		gated.skill[0] = sk;
+		gated.xp[0] = xp;
+		BG_AddWeaponAmmoTier(w, &gated);
+	}
+	if (sk2 >= 0) {
+		gated.skill[0] = sk2;
+		gated.xp[0] = xp;
+		BG_AddWeaponAmmoTier(w, &gated);
+	}
+}
+
+void parseAmmoNeeds(const string& inner, weaponAmmoTier_t *t)
+{
+	string linner = toLowerCopy(inner);
+	size_t pos = 0;
+
+	while (t->nNeeds < BG_AMMO_MAX_NEEDS) {
+		size_t a = linner.find("<need", pos);
+		if (a == string::npos)
+			break;
+		size_t tagEnd = inner.find('>', a);
+		if (tagEnd == string::npos)
+			break;
+		const string tag = inner.substr(a, tagEnd - a + 1);
+		const int sk = skillFromName(attrValue(tag, "skill"));
+		if (sk >= 0) {
+			t->skill[t->nNeeds] = sk;
+			t->xp[t->nNeeds] = parseXpAttr(tag);
+			t->nNeeds++;
+		}
+		pos = tagEnd + 1;
+	}
+}
+
+int parseAmmoTiers(weapon_t w, const string& inner)
+{
+	string linner = toLowerCopy(inner);
+	size_t pos = 0;
+	int added = 0;
+
+	for (;;) {
+		weaponAmmoTier_t t;
+		size_t a = linner.find("<tier", pos);
+		size_t tagEnd;
+		string tag;
+		qboolean selfClose;
+
+		if (a == string::npos)
+			break;
+		tagEnd = inner.find('>', a);
+		if (tagEnd == string::npos)
+			break;
+		tag = inner.substr(a, tagEnd - a + 1);
+		memset(&t, 0, sizeof(t));
+		t.maxclip = attrInt(tag, "maxclip", -1);
+		t.maxammo = attrInt(tag, "maxammo", -1);
+		selfClose = (tag.size() >= 2 && tag[tag.size() - 2] == '/') ? qtrue : qfalse;
+		if (!selfClose) {
+			size_t b = linner.find("</tier>", tagEnd);
+			if (b != string::npos)
+				parseAmmoNeeds(inner.substr(tagEnd + 1, b - (tagEnd + 1)), &t);
+			pos = (b == string::npos) ? tagEnd + 1 : b + 7;
+		} else {
+			pos = tagEnd + 1;
+		}
+		if (BG_AddWeaponAmmoTier(w, &t))
+			++added;
+	}
+	return added;
+}
+
+void parseWeaponAmmo(const string& xml)
+{
+	BG_ClearWeaponAmmoOverrides();
+
+	string body = xmlBlock(stripXmlComments(xml), "weaponammo");
+	if (body.empty()) {
+		trap_SetConfigstring(CS_WEAPONAMMO, "");
+		return;
+	}
+
+	string lbody = toLowerCopy(body);
+	size_t pos = 0;
+	int count = 0;
+	for (;;) {
+		size_t a = lbody.find("<weapon", pos);
+		size_t tagEnd;
+		string tag;
+		string inner;
+		weapon_t w;
+		qboolean selfClose;
+
+		if (a == string::npos)
+			break;
+		if (lbody.compare(a, 10, "<weaponamm") == 0) {
+			pos = a + 7;
+			continue;
+		}
+		tagEnd = body.find('>', a);
+		if (tagEnd == string::npos)
+			break;
+		tag = body.substr(a, tagEnd - a + 1);
+		selfClose = (tag.size() >= 2 && tag[tag.size() - 2] == '/') ? qtrue : qfalse;
+		if (!selfClose) {
+			size_t b = lbody.find("</weapon>", tagEnd);
+			if (b != string::npos) {
+				inner = body.substr(tagEnd + 1, b - (tagEnd + 1));
+				pos = b + 9;
+			} else {
+				pos = tagEnd + 1;
+			}
+		} else {
+			pos = tagEnd + 1;
+		}
+
+		w = weaponFromName(attrValue(tag, "name"));
+		if (w == WP_NONE)
+			continue;
+		if (parseAmmoTiers(w, inner) <= 0)
+			addShorthandAmmoTiers(w, tag);
+		if (bg_weaponAmmoOverride[w].used)
+			++count;
+	}
+
+	char cs[MAX_STRING_CHARS];
+	BG_WriteWeaponAmmoConfig(cs, sizeof(cs));
+	trap_SetConfigstring(CS_WEAPONAMMO, cs);
+	ammoTableNeedsUpdate = true;
+	BG_updateAmmoTable();
+	G_Printf("ENHMOD: %d weapon ammo overrides from ModEnhConfig.xml\n", count);
+}
+
 void parseIniBlocks(const string& text, const char *block, vector<map<string, string> >& out)
 {
 	out.clear();
@@ -661,7 +894,11 @@ void loadEnhFiles()
 	if (readFile("ModEnhConfig.xml", xml)) {
 		parseCommon(xml);
 		parseEntities(xml);
+		parseWeaponAmmo(xml);
 		G_Printf("ENHMOD: ModEnhConfig.xml loaded (%d entity rules)\n", (int)g_entitiesXml.size());
+	} else {
+		BG_ClearWeaponAmmoOverrides();
+		trap_SetConfigstring(CS_WEAPONAMMO, "");
 	}
 
 	string text;

@@ -2419,6 +2419,7 @@ extern	vmCvar_t		cg_optimizePrediction;
 //
 qboolean CG_Cvar_ClampInt( const char *name, vmCvar_t *vmCvar, int min, int max );
 void CG_ParseSkillLevels( void);
+void CG_ParseWeaponAmmo( void );
 const char *CG_ConfigString( int index );
 int CG_ConfigStringCopy( int index, char* buff, int buffsize );
 const char *CG_Argv( int arg );
@@ -2516,6 +2517,8 @@ void CG_DrawBigString2( int x, int y, const char *s, float alpha );
 void CG_DrawBigStringColor2( int x, int y, const char *s, vec4_t color );
 // END JOSEPH
 int CG_DrawStrlen( const char *str );
+float CG_DrawStringPixelWidth( const char *string, int charWidth, int charHeight );
+int CG_CenterX( const char *string, int charWidth, int charHeight );
 
 float	*CG_FadeColor( int startMsec, int totalMsec );
 float *CG_TeamColor( int team );

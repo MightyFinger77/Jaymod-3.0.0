@@ -1300,10 +1300,6 @@ qboolean CG_Debriefing_Draw( void ) {
 	}
 
 	CG_RestrictScreenWidth(true);
-	{
-		vec4_t sideColor = { 0.145f, 0.172f, 0.145f, 1.f };
-		CG_DrawSideBars(sideColor);
-	}
 
 	switch( cgs.dbMode ) {
 		case 1:

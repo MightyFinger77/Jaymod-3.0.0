@@ -676,6 +676,7 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 		pm.character = client->pers.character;
 		pm.cmd = *ucmd;
 		pm.skill = client->sess.skill;
+		pm.skillpoints = client->sess.skillpoints;
 		pm.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;	// spectators can fly through bodies
 		pm.trace = trap_TraceCapsuleNoEnts;
 		pm.pointcontents = trap_PointContents;
@@ -1461,6 +1462,7 @@ void ClientThink_real( gentity_t *ent, bool skipServerTime ) {
 	// -NERVE - SMF
 
 	pm.skill = client->sess.skill;
+	pm.skillpoints = client->sess.skillpoints;
 
 	client->pmext.airleft = ent->client->airOutTime - level.time;
 

@@ -26,7 +26,7 @@ Cvars added or changed after 2.2.0 are listed first. The long table below is the
 | `g_panzerMapLimit` | `0` | 2.3.0 | Caps consecutive maps one player can hold a panzer. |
 | `g_debugBullets` | `0` | 2.3.0 | Dev-only bullet path overlay (cheats / devmap). |
 | `cg_cycleBinoculars` | `0` | 2.3.0 | `0` skips binoculars when cycling weapons. |
-| `jay_fixedAspect` | `1` | 3.1.0 | Client. `1` (or unset) = widescreen HUD/UI without stretch. `0` = old stretched 640×480. ETL’s archived `cg_fixedAspect 0` is ignored; use this cvar. |
+| `jay_fixedAspect` | `1` | 3.1.0 | Client. `1` (or unset) = widescreen HUD/UI without stretch. Centered messages use real TTF width. `0` = old stretched 640×480. ETL’s archived `cg_fixedAspect 0` is ignored; use this cvar. |
 
 `cg_noVoiceChats` is a bit field as of 2.3.0: `0` all, `1` none, `3` team/fireteam only.
 

@@ -69,6 +69,8 @@ BG_updateAmmoTable()
             ammoTableMP[i].nextShotTime += cvars::bg_ammoNextDelayNudge.ivalue;
     }
 
+    BG_ApplyWeaponAmmoOverrides();
+
     Com_Printf( "^3Weapons Table Updated\n" );
 }
 

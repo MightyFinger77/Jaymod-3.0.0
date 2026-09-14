@@ -10,7 +10,7 @@ Same platform as 3.0.0, plus **EnhMod 1.0.9d behaviour inside `qagame`**. There 
 
 | File | Role |
 | --- | --- |
-| `ModEnhConfig.xml` | `<common>` + `<entity method="add\|if\|remove">` spawn rules |
+| `ModEnhConfig.xml` | `<common>` + `<entity method="add\|if\|remove">` spawn rules + optional `<weaponammo>` magazine/reserve tiers |
 | `enhmod_commands.db` | Custom `!command` / `exec` / `levels` |
 | `enhmod_level.db` | EnhMod levels and flag letters |
 | `enhmod_admin.db` | GUID → level / flags (not shipped) |
@@ -22,7 +22,11 @@ Builtins (`!riflewar`, `!pistolwar`, `!pumpgunwar`, `!freeze`, `!unfreeze`, `!di
 
 Cvars keep the published names, including the `g_adrenenalinecls` spelling. `g_em_votemap 1` allows only `map`, `nextmap`, `maprestart`, and `campaign`. Antirush `method` `r` and `j` are stored; both teleport to the team spawn before the timeout. Country uses free `GeoLite2-City.mmdb` (country + city) or `GeoLite2-Country.mmdb`. Each operator downloads their own from MaxMind; they are not shipped (we cannot redistribute them). If both files are present, City is used. Legacy `GeoIP.dat` still works. The connect IP/country line is not public: only levels whose flags include **`I`** see it (plus the server console). `advancedplayerinfo` still has to be on. `modifieddoublejump` turns on Jaymod `g_misc` `MISC_DOUBLEJUMP` — no extra pmove physics.
 
-`jay_fixedAspect` (default `1`) is the widescreen HUD/UI switch. ETL often archives `cg_fixedAspect 0`, so that cvar is **not** used. Unset or `1` keeps 4:3 element sizes: HUD uses the extra width (left stuff stays left, right stuff stays right), menus / limbo / tab / load and exit screens stay a centered 640×480 panel, and in-game text (chat, kill feed, SPECTATOR, scoreboard names) uses TTF so it does not stretch. `jay_fixedAspect 0` is the old stretched 640×480 look.
+`jay_fixedAspect` (default `1`) is the widescreen HUD/UI switch. ETL often archives `cg_fixedAspect 0`, so that cvar is **not** used. Unset or `1` keeps 4:3 element sizes: HUD uses the extra width (left stuff stays left, right stuff stays right), menus / limbo / tab / load and exit screens stay a centered 640×480 panel, and in-game text (chat, kill feed, SPECTATOR, scoreboard names) uses TTF so it does not stretch. Centered HUD strings (first blood, center print, objective print, Connection Interrupted, crosshair names) use real TTF width instead of 8px cells. Tab/intermission win art sits on the centered 4:3 board. `jay_fixedAspect 0` is the old stretched 640×480 look.
+
+Spectators can open the **V** vsay menu and send global vsay. Team / fireteam vsay stays blocked. Server `match_mutespecs` still decides whether players hear spec voice.
+
+Optional `<weaponammo>` in `ModEnhConfig.xml` sets magazine (`maxclip`) and reserve (`maxammo`) caps per weapon. List `<tier>`s in order; the highest matching tier wins. Each `<need>` on a tier is AND. `xp` is that skill’s XP (not total XP). `xp="max"` is the last enabled rung of `g_levels_*`. This is not spawn starting ammo (`<ammo>` / `<ammoclip>` on `<entity>`). If a weapon has tiers, the vanilla skill-1 extra clip at spawn is skipped. Existing `ModEnhConfig.xml` is not overwritten — add the block yourself. See [server install](server.md#weapon-ammo-tiers).
 
 `jaymod_enh.dll` still will not attach. Keep `g_requireClientVersion 0` if 2.3.0 / 3.0.0 clients are still joining.
 

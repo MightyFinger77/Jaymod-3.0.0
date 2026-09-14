@@ -188,7 +188,9 @@ int AddToClip(
 			  playerState_t *ps,// which player
 			  int weapon,		// weapon to add ammo for
 			  int ammomove,		// ammount to add. 0 means fill the clip if possible
-			  int outOfReserve)	// is the amount to be added out of reserve
+			  int outOfReserve,	// is the amount to be added out of reserve
+			  int *skill,
+			  const float *skillpoints)
 {
 	int inclip, maxclip;
 	int ammoweap = BG_FindAmmoForWeapon( (weapon_t)weapon );
@@ -197,7 +199,7 @@ int AddToClip(
 		return qfalse;
 
 	inclip	= ps->ammoclip[BG_FindClipForWeapon( (weapon_t)weapon )];
-	maxclip = GetAmmoTableData(weapon)->maxclip;
+	maxclip = BG_MaxClipForWeapon( (weapon_t)weapon, skill, skillpoints );
 
 	if (!ammomove)	// amount to add to the clip not specified
 		ammomove = maxclip - inclip;	// max amount that can be moved into the clip
@@ -228,8 +230,8 @@ Fill_Clip
 	push reserve ammo into available space in the clip
 ==============
 */
-void Fill_Clip (playerState_t *ps, int weapon) {
-	AddToClip(ps, weapon, 0, qtrue);
+void Fill_Clip (playerState_t *ps, int weapon, int *skill, const float *skillpoints) {
+	AddToClip(ps, weapon, 0, qtrue, skill, skillpoints);
 }
 
 /*
@@ -246,7 +248,7 @@ Add_Ammo
 int Add_Ammo(gentity_t *ent, int weapon, int count, qboolean fillClip) {
 	int ammoweap = BG_FindAmmoForWeapon( (weapon_t)weapon );
 	int originalCount;
-	int maxammo = BG_MaxAmmoForWeapon( (weapon_t)ammoweap, ent->client->sess.skill );
+	int maxammo = BG_MaxAmmoForWeapon( (weapon_t)ammoweap, ent->client->sess.skill, ent->client->sess.skillpoints );
 
 	originalCount = ent->client->ps.ammo[ammoweap];
 
@@ -265,7 +267,7 @@ int Add_Ammo(gentity_t *ent, int weapon, int count, qboolean fillClip) {
 	}
 
 	if( fillClip ) {
-		Fill_Clip(&ent->client->ps, weapon);
+		Fill_Clip(&ent->client->ps, weapon, ent->client->sess.skill, ent->client->sess.skillpoints);
 	}
 
 	if( ammoweap == WP_PANZERFAUST || ammoweap == WP_FLAMETHROWER ) {
@@ -320,7 +322,7 @@ for any two-handed weapon
 =================================================================
 */
 qboolean AddMagicAmmo(gentity_t *receiver, int numOfClips) {
-	return BG_AddMagicAmmo(&receiver->client->ps, receiver->client->sess.skill, receiver->client->sess.sessionTeam, numOfClips);
+	return BG_AddMagicAmmo(&receiver->client->ps, receiver->client->sess.skill, receiver->client->sess.sessionTeam, numOfClips, receiver->client->sess.skillpoints);
 }
 
 //======================================================================
@@ -802,7 +804,7 @@ void Touch_Item( gentity_t *ent, gentity_t *other, trace_t *trace ) {
     }
 
 	// the same pickup rules are used for client side and server side
-	if ( !BG_CanItemBeGrabbed( &ent->s, &other->client->ps, other->client->sess.skill, other->client->sess.sessionTeam ) ) {
+	if ( !BG_CanItemBeGrabbed( &ent->s, &other->client->ps, other->client->sess.skill, other->client->sess.sessionTeam, other->client->sess.skillpoints ) ) {
 		return;
 	}
 

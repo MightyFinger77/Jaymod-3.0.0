@@ -160,6 +160,26 @@ void CG_AdjustFrom640( float *x, float *y, float *w, float *h ) {
 	*h *= cgs.screenYScale;
 }
 
+// Keep a virtual rect's aspect on widescreen (Y scale for both axes, centered).
+// Needed for rotated map arrows: X-stretched quads turn the facing pip into a V.
+static void CG_AdjustFrom640Uniform( float *x, float *y, float *w, float *h ) {
+	float cx, cy, aw, ah;
+
+	if (CG_IsScreenWidthRestricted() || !CG_UseFixedAspect()) {
+		CG_AdjustFrom640( x, y, w, h );
+		return;
+	}
+
+	cx = (*x + *w * 0.5f) * cgs.screenXScale;
+	cy = (*y + *h * 0.5f) * cgs.screenYScale;
+	aw = (float)fabs( *w ) * cgs.screenYScale;
+	ah = (float)fabs( *h ) * cgs.screenYScale;
+	*x = cx - aw * 0.5f;
+	*y = cy - ah * 0.5f;
+	*w = ( *w < 0.f ) ? -aw : aw;
+	*h = ( *h < 0.f ) ? -ah : ah;
+}
+
 /*
 ================
 CG_FillRect
@@ -425,8 +445,11 @@ void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader 
 		t0 = 0;
 		t1 = 1;
 	}
-	
-	CG_AdjustFrom640( &x, &y, &width, &height );
+
+	if (CG_UseFixedAspect() && !CG_IsScreenWidthRestricted() && width == height)
+		CG_AdjustFrom640Uniform( &x, &y, &width, &height );
+	else
+		CG_AdjustFrom640( &x, &y, &width, &height );
 	trap_R_DrawStretchPic( x, y, width, height, s0, t0, s1, t1, hShader );
 }
 
@@ -440,7 +463,7 @@ Coordinates are 640*480 virtual values
 */
 void CG_DrawRotatedPic( float x, float y, float width, float height, qhandle_t hShader, float angle ) {
 
-	CG_AdjustFrom640( &x, &y, &width, &height );
+	CG_AdjustFrom640Uniform( &x, &y, &width, &height );
 
 	trap_R_DrawRotatedPic( x, y, width, height, 0, 0, 1, 1, hShader, angle );
 }
@@ -479,11 +502,19 @@ void CG_DrawChar( float x, float y, int width, int height, int ch ) {
 	// Use pitch (left bearing) + xSkip advance — without pitch, thin
 	// glyphs like '!' sit against the previous letter and leave a hole.
 	if ( cgs.media.limboFont2.glyphs[ch].glyph ) {
+		float cap, baseline;
+
 		glyph = &cgs.media.limboFont2.glyphs[ch];
 		scalex = height / 65.f * cgs.media.limboFont2.glyphScale;
 		scaley = scalex;
 		ax = x + glyph->pitch * scalex;
-		ay = y + height - glyph->top * scaley;
+		// Bitmap callers pass y as the top of a character cell. Share one
+		// baseline (cap-height of 'A') so letters do not bounce up and down.
+		cap = cgs.media.limboFont2.glyphs[(unsigned char)'A'].top * scaley;
+		if ( cap < 1.f )
+			cap = height * 0.75f;
+		baseline = y + (height + cap) * 0.5f;
+		ay = baseline - glyph->top * scaley;
 		CG_Text_PaintChar_Ext( ax, ay, glyph->imageWidth, glyph->imageHeight,
 			scalex, scaley, glyph->s, glyph->t, glyph->s2, glyph->t2, glyph->glyph );
 		return;
@@ -898,6 +929,29 @@ int CG_DrawStrlen( const char *str ) {
 	}
 
 	return count;
+}
+
+float CG_DrawStringPixelWidth( const char *string, int charWidth, int charHeight ) {
+	const char *s = string;
+	float w = 0;
+
+	if ( !s )
+		return 0;
+	if ( charHeight <= 0 )
+		charHeight = charWidth;
+	while ( *s ) {
+		if ( Q_IsColorString( s ) ) {
+			s += 2;
+			continue;
+		}
+		w += CG_DrawCharStep( *s, charWidth, charHeight );
+		s++;
+	}
+	return w;
+}
+
+int CG_CenterX( const char *string, int charWidth, int charHeight ) {
+	return SCREEN_CENTER - (int)( CG_DrawStringPixelWidth( string, charWidth, charHeight ) * 0.5f + 0.5f );
 }
 
 /*

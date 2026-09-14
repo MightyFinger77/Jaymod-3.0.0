@@ -2498,6 +2498,10 @@ static void PM_WaterEvents( void ) {		// FIXME?
 }
 
 
+static int PM_WeaponMaxClip( int weapon ) {
+	return BG_MaxClipForWeapon( (weapon_t)weapon, pm->skill, pm->skillpoints );
+}
+
 /*
 ==============
 PM_BeginWeaponReload
@@ -2533,12 +2537,12 @@ static void PM_BeginWeaponReload( int weapon ) {
     // Jaybird - check that they actually need a reload
     // Note that akimbos must check two different places!
     if (BG_IsAkimboWeapon(weapon)) {
-        if (pm->ps->ammoclip[BG_FindClipForWeapon((weapon_t)weapon)] >= GetAmmoTableData(weapon)->maxclip &&
-            pm->ps->ammoclip[BG_FindClipForWeapon((weapon_t)BG_AkimboSidearm(weapon))] >= GetAmmoTableData(BG_FindClipForWeapon((weapon_t)BG_AkimboSidearm(weapon)))->maxclip ) {
+        if (pm->ps->ammoclip[BG_FindClipForWeapon((weapon_t)weapon)] >= PM_WeaponMaxClip(weapon) &&
+            pm->ps->ammoclip[BG_FindClipForWeapon((weapon_t)BG_AkimboSidearm(weapon))] >= PM_WeaponMaxClip(BG_AkimboSidearm(weapon)) ) {
             return;
         }
     } else {
-    	if(pm->ps->ammoclip[item->giAmmoIndex] >= GetAmmoTableData(weapon)->maxclip) {
+    	if(pm->ps->ammoclip[item->giAmmoIndex] >= PM_WeaponMaxClip(weapon)) {
 	    	return;
 	    }
     }
@@ -3000,7 +3004,7 @@ static void PM_ReloadClip( int weapon ) {
 	ammoreserve = pm->ps->ammo[ BG_FindAmmoForWeapon( (weapon_t)weapon )];
 	ammoclip	= pm->ps->ammoclip[BG_FindClipForWeapon(  (weapon_t)weapon )];
 
-	ammomove = GetAmmoTableData(weapon)->maxclip - ammoclip;
+	ammomove = PM_WeaponMaxClip(weapon) - ammoclip;
 
 	if( weapon == WP_M97 ) {
 		ammomove = 1;
@@ -3087,7 +3091,7 @@ void PM_CheckForReload( int weapon ) {
 		case WP_FG42SCOPE:
 		case WP_GARAND_SCOPE:
 		case WP_K43_SCOPE:
-			if( reloadRequested && pm->ps->ammo[ammoWeap] && pm->ps->ammoclip[clipWeap] < GetAmmoTableData(weapon)->maxclip) {
+			if( reloadRequested && pm->ps->ammo[ammoWeap] && pm->ps->ammoclip[clipWeap] < PM_WeaponMaxClip(weapon)) {
 				PM_BeginWeaponChange( weapon, weapAlts[weapon], !(pm->ps->ammo[ammoWeap]) ? qfalse : qtrue );
 			}
 			return;
@@ -3100,13 +3104,13 @@ void PM_CheckForReload( int weapon ) {
 
 		if( reloadRequested ) {
 			if( pm->ps->ammo[ammoWeap] ) {
-				if( pm->ps->ammoclip[clipWeap] < GetAmmoTableData(weapon)->maxclip ) {
+				if( pm->ps->ammoclip[clipWeap] < PM_WeaponMaxClip(weapon) ) {
 					doReload = qtrue;
 				}
 
 				// akimbo should also check other weapon status
 				if( BG_IsAkimboWeapon( weapon ) ) {
-					if( pm->ps->ammoclip[BG_FindClipForWeapon( (weapon_t)BG_AkimboSidearm(weapon) )] < GetAmmoTableData(BG_FindClipForWeapon( (weapon_t)BG_AkimboSidearm(weapon) ))->maxclip )
+					if( pm->ps->ammoclip[BG_FindClipForWeapon( (weapon_t)BG_AkimboSidearm(weapon) )] < PM_WeaponMaxClip(BG_AkimboSidearm(weapon)) )
 						doReload = qtrue;
 				}
 			}
@@ -6475,7 +6479,7 @@ void PM_M97Reload() {
 	}
 
 	// If clip isn't full, load another shell
-	if( pm->ps->ammoclip[WP_M97] < GetAmmoTableData(WP_M97)->maxclip && pm->ps->ammo[BG_FindAmmoForWeapon(WP_M97)] ) {
+	if( pm->ps->ammoclip[WP_M97] < PM_WeaponMaxClip(WP_M97) && pm->ps->ammo[BG_FindAmmoForWeapon(WP_M97)] ) {
 		PM_AddEvent( EV_FILL_CLIP );
 		PM_StartWeaponAnim(WEAP_RELOAD2);
 

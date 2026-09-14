@@ -388,6 +388,7 @@ extern const unsigned int aReinfSeeds[MAX_REINFSEEDS];
 
 #define CS_AVAILABLESTRIKES				42
 #define CS_SKILLLEVELS					43
+#define CS_WEAPONAMMO					44
 
 #define	CS_MODELS						64
 #define	CS_SOUNDS						( CS_MODELS +				MAX_MODELS					)
@@ -761,6 +762,7 @@ typedef struct {
 	float		xyspeed;
 
 	int			*skill;				// player skills
+	const float	*skillpoints;		// skill XP (optional; used by weapon ammo tiers)
 
 #ifdef GAMEDLL	// the whole stamina thing is only in qagame
     // leadership appears to not be used
@@ -1593,7 +1595,7 @@ int BG_AkimboSidearm( int weaponNum );
 
 qboolean BG_CanUseWeapon(int classNum, int teamNum, weapon_t weapon);
 
-qboolean	BG_CanItemBeGrabbed( const entityState_t *ent, const playerState_t *ps, int *skill, int teamNum );
+qboolean	BG_CanItemBeGrabbed( const entityState_t *ent, const playerState_t *ps, int *skill, int teamNum, const float *skillpoints = NULL );
 
 
 // content masks
@@ -1686,7 +1688,7 @@ weapon_t BG_WeaponForMOD( int MOD );
 qboolean	BG_WeaponInWolfMP( int weapon );
 qboolean	BG_PlayerTouchesItem( playerState_t *ps, entityState_t *item, int atTime );
 qboolean	BG_PlayerSeesItem	( playerState_t *ps, entityState_t *item, int atTime );
-qboolean	BG_AddMagicAmmo ( playerState_t *ps, int *skill, int teamNum, int numOfClips );
+qboolean	BG_AddMagicAmmo ( playerState_t *ps, int *skill, int teamNum, int numOfClips, const float *skillpoints = NULL );
 
 #define	OVERCLIP		1.001
 
@@ -2094,7 +2096,7 @@ float BG_SplineLength(splinePath_t* pSpline);
 void BG_AddSplineControl(splinePath_t* spline, const char* name);
 void BG_LinearPathOrigin2(float radius, splinePath_t** pSpline, float *deltaTime, vec3_t result, qboolean backwards);
 
-int BG_MaxAmmoForWeapon( weapon_t weaponNum, int *skill );
+int BG_MaxAmmoForWeapon( weapon_t weaponNum, int *skill, const float *skillpoints = NULL );
 
 void BG_InitLocations( vec2_t world_mins, vec2_t world_maxs );
 char *BG_GetLocationString( vec_t* pos );
@@ -2302,6 +2304,32 @@ qboolean BG_LoadSpeakerScript( const char *filename );
 extern ammotable_t ammoTableMP[WP_NUM_WEAPONS];
 extern ammotable_t ammoTableMP_BACKUP[WP_NUM_WEAPONS];
 #define GetAmmoTableData(ammoIndex) ((ammotable_t*)(&ammoTableMP[ammoIndex]))
+
+#define BG_AMMO_MAX_TIERS	6
+#define BG_AMMO_MAX_NEEDS	3
+#define BG_AMMO_XP_MAX		-2
+
+typedef struct {
+	int		maxclip;
+	int		maxammo;
+	int		nNeeds;
+	int		skill[BG_AMMO_MAX_NEEDS];
+	int		xp[BG_AMMO_MAX_NEEDS];
+} weaponAmmoTier_t;
+
+typedef struct {
+	qboolean		used;
+	int			nTiers;
+	weaponAmmoTier_t	tiers[BG_AMMO_MAX_TIERS];
+} weaponAmmoOverride_t;
+
+extern weaponAmmoOverride_t bg_weaponAmmoOverride[WP_NUM_WEAPONS];
+void BG_ClearWeaponAmmoOverrides( void );
+qboolean BG_AddWeaponAmmoTier( int weapon, const weaponAmmoTier_t *tier );
+void BG_ApplyWeaponAmmoOverrides( void );
+void BG_ParseWeaponAmmoConfig( const char *str );
+void BG_WriteWeaponAmmoConfig( char *buf, int buflen );
+int BG_MaxClipForWeapon( weapon_t weaponNum, int *skill, const float *skillpoints = NULL );
 
 #define MAX_MAP_SIZE 65536
 

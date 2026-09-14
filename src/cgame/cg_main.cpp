@@ -3094,6 +3094,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qb
 	cg.dynamiteTime = 30000;
 	CG_ParseJaymodinfo();
 	CG_ParseSkillLevels();
+	CG_ParseWeaponAmmo();
 	CG_SetJayFlags();
 	CG_SetMACAddress();
 

@@ -697,7 +697,7 @@ void CG_mvOverlayClientUpdate(int pID, int index)
 						);
 	}
 
-	cg.mvOverlay[index].width = CG_DrawStrlen(cg.mvOverlay[index].info) * MVINFO_TEXTSIZE;
+	cg.mvOverlay[index].width = (int)(CG_DrawStringPixelWidth(cg.mvOverlay[index].info, MVINFO_TEXTSIZE, MVINFO_TEXTSIZE) + 0.5f);
 }
 
 // Update info on all clients received for display/cursor interaction
@@ -764,7 +764,7 @@ void CG_mvOverlayDisplay(void)
 
 				// Draw name info only if we're hovering over the text element
 				if(!(cg.mvCurrentActive->mvInfo & MV_SELECTED) || cg.mvCurrentActive == cg.mvCurrentMainview) {
-					int w = CG_DrawStrlen(cgs.clientinfo[pID].name) * (MVINFO_TEXTSIZE - 1);
+					int w = (int)(CG_DrawStringPixelWidth(cgs.clientinfo[pID].name, MVINFO_TEXTSIZE - 1, MVINFO_TEXTSIZE - 1) + 0.5f);
 
 					CG_FillRect(x - 1 - w - 6, y + 1, w + 2, MVINFO_TEXTSIZE - 1 + 2, colorMdGrey);
 					CG_DrawStringExt(x - w - 6, y + 1,

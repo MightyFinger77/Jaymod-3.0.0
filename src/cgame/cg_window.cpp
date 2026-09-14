@@ -415,7 +415,7 @@ void CG_demoTimescaleDraw(void)
 {
 	if(cg.demoPlayback && cgs.timescaleUpdate > cg.time && demo_drawTimeScale.integer != 0) {
 		char *s = va("^3TimeScale: ^7%.1f", cg_timescale.value);
-		int w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
+		int w = (int)(CG_DrawStringPixelWidth(s, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT) + 0.5f);
 
 		CG_FillRect(42 - 2, 400, w + 5, SMALLCHAR_HEIGHT + 3, colorDkGreen);
 		CG_DrawRect(42 - 2, 400, w + 5, SMALLCHAR_HEIGHT + 3, 1, colorMdYellow);
@@ -581,7 +581,7 @@ void CG_windowNormalizeOnText(cg_window_t *w)
 		if(w->effects & WFX_TRUETYPE) {
 			tmp = CG_Text_Width_Ext((char*)w->lineText[i], w->fontScaleX, 0, &cgs.media.limboFont2);
 		} else {
-			tmp = CG_DrawStrlen((char*)w->lineText[i]) * w->fontWidth;
+			tmp = (int)(CG_DrawStringPixelWidth((char*)w->lineText[i], w->fontWidth, w->fontHeight) + 0.5f);
 		}
 
 		if(tmp > w->w) {

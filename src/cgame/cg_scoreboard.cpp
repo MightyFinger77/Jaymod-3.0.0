@@ -93,15 +93,15 @@ int WM_DrawObjectives( int x, int y, int width, float fade ) {
 		y += SMALLCHAR_HEIGHT * ( ( rows - 2 ) / 2 );
 
 		if ( flagshader ) {
-			CG_DrawPic( 100, 10, 210, 136, trap_R_RegisterShaderNoMip( flagshader ) );
-			CG_DrawPic( 325, 10, 210, 136, trap_R_RegisterShaderNoMip( flagshader ) );
+			CG_DrawPic( SCREEN_X_OFFSET + 100, 10, 210, 136, trap_R_RegisterShaderNoMip( flagshader ) );
+			CG_DrawPic( SCREEN_X_OFFSET + 325, 10, 210, 136, trap_R_RegisterShaderNoMip( flagshader ) );
 		}
 
 		if ( shader )
-			CG_DrawPic( 229, 10, 182, 136, trap_R_RegisterShaderNoMip( shader ) );
+			CG_DrawPic( SCREEN_X_OFFSET + 229, 10, 182, 136, trap_R_RegisterShaderNoMip( shader ) );
 		if ( nameshader ) {
-			CG_DrawPic( 140, 50, 127, 64, trap_R_RegisterShaderNoMip( nameshader ) );
-			CG_DrawPic( 365, 50, 127, 64, trap_R_RegisterShaderNoMip( "ui/assets/portraits/text_win.tga" ) );
+			CG_DrawPic( SCREEN_X_OFFSET + 140, 50, 127, 64, trap_R_RegisterShaderNoMip( nameshader ) );
+			CG_DrawPic( SCREEN_X_OFFSET + 365, 50, 127, 64, trap_R_RegisterShaderNoMip( "ui/assets/portraits/text_win.tga" ) );
 		}
 		return y;
 	}
@@ -327,7 +327,7 @@ static void WM_DrawClientScore( int x, int y, score_t *score, float *color, floa
 
 		 // CHRUKER: b031 - Show connecting people as connecting
 		s = CG_TranslateString( (ci->team == TEAM_SPECTATOR && ci->shoutcaster)?"^3SHOUTCASTER":"^2CONNECTING" );
-		w = CG_DrawStrlen( s ) * SMALLCHAR_WIDTH;
+		w = (int)( CG_DrawStringPixelWidth( s, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT ) + 0.5f );
 
 		CG_DrawSmallString( int(tempx + totalwidth - w), y, s, fade );
 		return;
@@ -514,7 +514,7 @@ static void WM_DrawClientScore_Small( int x, int y, score_t *score, float *color
 		totalwidth = INFO_CLASS_WIDTH + INFO_SCORE_WIDTH + INFO_LATENCY_WIDTH - 8;
 
 		s = CG_TranslateString( (ci->team == TEAM_SPECTATOR && ci->shoutcaster)?"^3SHOUTCASTER":"^2CONNECTING" );
-		w = CG_DrawStrlen( s ) * MINICHAR_WIDTH;
+		w = (int)( CG_DrawStringPixelWidth( s, MINICHAR_WIDTH, MINICHAR_HEIGHT ) + 0.5f );
 
 		// CHRUKER: b034 - Using the mini char height
 		CG_DrawStringExt( int(tempx + totalwidth - w), y, s, hcolor, qfalse, qfalse, MINICHAR_WIDTH, MINICHAR_HEIGHT, 0 );
@@ -590,12 +590,12 @@ static int WM_DrawInfoLine( int x, int y, float fade ) {
 		s = CG_TranslateString( s );
 	}
 
-	CG_FillRect( 320 - w/2, y, w, 20, clrUiBar );
-	CG_DrawRect_FixedBorder( 320 - w/2, y, w, 20, 1, colorBlack );
+	CG_FillRect( SCREEN_X_OFFSET + 320 - w/2, y, w, 20, clrUiBar );
+	CG_DrawRect_FixedBorder( SCREEN_X_OFFSET + 320 - w/2, y, w, 20, 1, colorBlack );
 
 	w = CG_Text_Width_Ext( s, 0.25f, 0, &cgs.media.limboFont1 );
 
-	CG_Text_Paint_Ext( 320 - w*0.5f, y + 15, 0.25f, 0.25f, tclr, s, 0, 0, 0, &cgs.media.limboFont1 );
+	CG_Text_Paint_Ext( SCREEN_X_OFFSET + 320 - w*0.5f, y + 15, 0.25f, 0.25f, tclr, s, 0, 0, 0, &cgs.media.limboFont1 );
 //	CG_DrawSmallString( 320 - w/2, ( y + INFO_LINE_HEIGHT / 2 ) - SMALLCHAR_HEIGHT / 2, s, fade );
 	return y + INFO_LINE_HEIGHT + 6;
 }

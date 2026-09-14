@@ -366,10 +366,6 @@ static void CG_Fade_f( void ) {
 }
 
 void CG_QuickMessage_f( void ) {
-	if( cgs.clientinfo[ cg.clientNum ].team == TEAM_SPECTATOR ) {
-		return;
-	}
-
 	CG_EventHandling( CGAME_EVENT_NONE, qfalse );
 
 	if( cg_quickMessageAlt.integer ) {
@@ -481,15 +477,6 @@ static void CG_VoiceChat_f( void ) {
 
 	if ( trap_Argc() != 2 )
 		return;
-
-	// NERVE - SMF - don't let spectators voice chat
-	// NOTE - This cg.snap will be the person you are following, but its just for intermission test
-	if ( cg.snap && ( cg.snap->ps.pm_type != PM_INTERMISSION ) ) {
-		if ( cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR || cgs.clientinfo[cg.clientNum].team == TEAM_FREE ) {
-			CG_Printf ( CG_TranslateString( "Can't voice chat as a spectator.\n" ) );
-			return;
-		}
-	}
 
 	trap_Argv( 1, chatCmd, 64 );
 

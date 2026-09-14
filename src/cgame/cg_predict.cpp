@@ -1009,6 +1009,15 @@ void CG_PredictPlayerState( void ) {
 	}
 
 	cg_pmove.skill = cgs.clientinfo[cg.snap->ps.clientNum].skill;
+	{
+		static float predSkillPoints[SK_NUM_SKILLS];
+		int si;
+		clientInfo_t *ci = &cgs.clientinfo[cg.snap->ps.clientNum];
+
+		for ( si = 0; si < SK_NUM_SKILLS; si++ )
+			predSkillPoints[si] = (float)ci->skillpoints[si];
+		cg_pmove.skillpoints = predSkillPoints;
+	}
 
 	cg_pmove.trace = CG_TraceCapsule;
 	//cg_pmove.trace = CG_Trace;

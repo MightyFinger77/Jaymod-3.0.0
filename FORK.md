@@ -1,6 +1,6 @@
 # Fork notes
 
-**Jaymod 3.1.0** is a fork of [RngesusSolutions/jaymod2.2.0](https://github.com/RngesusSolutions/jaymod2.2.0) (Jaymod 2.3.0), itself a maintenance of official 2.2.0. 3.0.0 added Lua and 64-bit ET: Legacy modules. 3.1.0 adds built-in EnhMod and widescreen HUD/UI.
+**Jaymod 3.1.0** is a fork of [RngesusSolutions/jaymod2.2.0](https://github.com/RngesusSolutions/jaymod2.2.0) (Jaymod 2.3.0), itself a maintenance of official 2.2.0. 3.0.0 added Lua and 64-bit ET: Legacy modules. 3.1.0 adds built-in EnhMod, widescreen HUD/UI (real TTF centering), spectator vsay, and optional `<weaponammo>` magazine/reserve tiers in `ModEnhConfig.xml`.
 
 User-facing docs live in the wiki-style pages linked from [README.md](README.md):
 
