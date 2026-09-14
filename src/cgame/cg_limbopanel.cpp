@@ -2552,6 +2552,11 @@ qboolean CG_LimboPanel_Draw( void ) {
 //	panel_button_t** buttons = limboPanelButtons;
 
 	CG_RestrictScreenWidth(true);
+	{
+		// Same olive as stock limbo chrome / load screens so the 4:3 sides blend.
+		vec4_t sideColor = { 0.145f, 0.172f, 0.145f, 1.f };
+		CG_DrawSideBars(sideColor);
+	}
 
 	hilight = BG_PanelButtonsGetHighlightButton( limboPanelButtons );
 	if( hilight && hilight != lastHighlight ) {
