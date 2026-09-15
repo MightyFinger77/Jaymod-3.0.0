@@ -1204,6 +1204,122 @@ void CG_Debriefing_ChatBox_Draw( panel_button_t* button ) {
 }
 
 
+panel_button_text_t mapVoteFont = {
+	0.20f, 0.22f,
+	{ 1.f, 1.f, 1.f, 0.8f },
+	0, 0,
+	DB_MASTER_FONT,
+};
+
+panel_button_t mapVoteWindow = {
+	NULL,
+	"MAP VOTE",
+	{ 10, 28, 620, 328 },
+	{ 0, 0, 0, 0, 0, 0, 0, 0 },
+	NULL,
+	NULL,
+	NULL,
+	CG_PanelButtonsRender_Window,
+	NULL,
+};
+
+panel_button_t mapVoteHeadingName = {
+	NULL,
+	"Name",
+	{ 20, 58, 0, 0 },
+	{ 0, 0, 0, 0, 0, 0, 0, 0 },
+	&mapVoteFont,
+	NULL,
+	NULL,
+	BG_PanelButtonsRender_Text,
+	NULL,
+};
+
+panel_button_t mapVoteHeadingVotes = {
+	NULL,
+	"Score",
+	{ 540, 58, 0, 0 },
+	{ 0, 0, 0, 0, 0, 0, 0, 0 },
+	&mapVoteFont,
+	NULL,
+	NULL,
+	BG_PanelButtonsRender_Text,
+	NULL,
+};
+
+panel_button_t mapVoteNamesList = {
+	NULL,
+	NULL,
+	{ 16, 62, 572, 242 },
+	{ 0, 0, 0, 0, 0, 0, 0, 0 },
+	&mapVoteFont,
+	CG_MapVote_List_KeyDown,
+	NULL,
+	CG_MapVote_List_Draw,
+	NULL,
+};
+
+panel_button_t mapVoteNamesListScroll = {
+	NULL,
+	NULL,
+	{ 598, 62, 16, 242 },
+	{ 3, 0, 0, 0, 0, 0, 0, 0 },
+	NULL,
+	CG_Debriefing_Scrollbar_KeyDown,
+	CG_Debriefing_Scrollbar_KeyUp,
+	CG_Debriefing_Scrollbar_Draw,
+	NULL,
+};
+
+panel_button_t mapVoteButton1 = {
+	NULL,
+	"1: VOTE",
+	{ 16, 312, 80, 16 },
+	{ 1, 0, 0, 0, 0, 0, 0, 0 },
+	NULL,
+	CG_MapVote_VoteButton_KeyDown,
+	NULL,
+	CG_MapVote_VoteButton_Draw,
+	NULL,
+};
+
+panel_button_t mapVoteButton2 = {
+	NULL,
+	"2: VOTE",
+	{ 100, 312, 80, 16 },
+	{ 2, 0, 0, 0, 0, 0, 0, 0 },
+	NULL,
+	CG_MapVote_VoteButton_KeyDown,
+	NULL,
+	CG_MapVote_VoteButton_Draw,
+	NULL,
+};
+
+panel_button_t mapVoteButton3 = {
+	NULL,
+	"3: VOTE",
+	{ 184, 312, 80, 16 },
+	{ 3, 0, 0, 0, 0, 0, 0, 0 },
+	NULL,
+	CG_MapVote_VoteButton_KeyDown,
+	NULL,
+	CG_MapVote_VoteButton_Draw,
+	NULL,
+};
+
+panel_button_t* mapVoteButtons[] = {
+	&debriefTitleWindow,
+	&mapVoteWindow,
+	&mapVoteHeadingName,
+	&mapVoteHeadingVotes,
+	&mapVoteNamesListScroll,
+	&mapVoteNamesList,
+	&mapVoteButton1,
+	&mapVoteButton2,
+	&mapVoteButton3,
+	NULL
+};
+
 panel_button_t* chatPanelButtons[] = {
 	&chatPanelWindow, &chatPanelText,
 
@@ -1218,6 +1334,7 @@ void CG_ChatPanel_Setup( void ) {
 	BG_PanelButtonsSetup( chatPanelButtons );
 	BG_PanelButtonsSetup( teamDebriefPanelButtons );
 	BG_PanelButtonsSetup( debriefPanelButtons );
+	BG_PanelButtonsSetup( mapVoteButtons );
 }
 
 void CG_Debriefing_Startup( void ) {
@@ -1245,7 +1362,11 @@ void CG_Debriefing_Startup( void ) {
 		trap_S_StartLocalSound( trap_S_RegisterSound( "sound/music/axis_win.wav", qtrue ), CHAN_LOCAL_SOUND );
 	}
 
-	cgs.dbMode = 0;
+	cgs.dbMode = ( cgs.gametype == GT_WOLF_MAPVOTE ) ? 3 : 0;
+	cgs.mapVotePicked = -1;
+	cgs.mapVoteListOffset = 0;
+	cgs.mapVoteFor[0] = cgs.mapVoteFor[1] = cgs.mapVoteFor[2] = -1;
+	CG_ParseMapVote();
 }
 
 void CG_Debriefing_Shutdown( void ) {
@@ -1327,6 +1448,11 @@ qboolean CG_Debriefing_Draw( void ) {
 
 			BG_PanelButtonsRender( chatPanelButtons );
 
+			CG_DrawPic( cgDC.cursorx, cgDC.cursory, 32, 32, cgs.media.cursorIcon );
+			break;
+		case 3:
+			BG_PanelButtonsRender( mapVoteButtons );
+			BG_PanelButtonsRender( chatPanelButtons );
 			CG_DrawPic( cgDC.cursorx, cgDC.cursory, 32, 32, cgs.media.cursorIcon );
 			break;
 	}
@@ -1647,6 +1773,8 @@ int CG_Debriefing_ScrollGetMax( panel_button_t* button ) {
 			return 7;
 		case 2:
 			return 7;
+		case 3:
+			return 20;
 	}
 	return 0;
 }
@@ -1677,6 +1805,8 @@ int CG_Debriefing_ScrollGetCount( panel_button_t* button ) {
 				return cgs.campaignData.mapCount;
 			}
 			return 0;
+		case 3:
+			return cgs.mapVoteCount;
 				
 	}
 	return 0;
@@ -1690,6 +1820,8 @@ int CG_Debriefing_ScrollGetOffset( panel_button_t* button ) {
 			return cgs.dbWeaponListOffset;
 		case 2:
 			return cgs.tdbMapListOffset;
+		case 3:
+			return cgs.mapVoteListOffset;
 	}
 	return 0;
 }
@@ -1704,6 +1836,9 @@ void CG_Debriefing_ScrollSetOffset( panel_button_t* button, int ofs ) {
 			return;
 		case 2:
 			cgs.tdbMapListOffset = ofs;
+			return;
+		case 3:
+			cgs.mapVoteListOffset = ofs;
 			return;
 	}
 }
@@ -1745,6 +1880,7 @@ void CG_Debriefing_MouseEvent( int x, int y ) {
 
 	switch( cgs.dbMode ) {
 		case 2:
+		case 3:
 			button = BG_PanelButtons_GetFocusButton();
 			if( button && button->onDraw == CG_Debriefing_Scrollbar_Draw ) {
 				rectDef_t r;
@@ -1846,6 +1982,29 @@ void CG_Debriefing_KeyEvent( int key, qboolean down ) {
 			if( BG_PanelButtonsKeyEvent( key, down, debriefPanelButtons ) ) {
 				return;
 			}			
+			break;
+		case 3:
+			if ( down && ( key == K_MWHEELDOWN || key == K_MWHEELUP ) ) {
+				int maxofs = cgs.mapVoteCount - 20;
+				if ( maxofs < 0 ) {
+					maxofs = 0;
+				}
+				if ( key == K_MWHEELDOWN ) {
+					cgs.mapVoteListOffset++;
+				} else {
+					cgs.mapVoteListOffset--;
+				}
+				if ( cgs.mapVoteListOffset > maxofs ) {
+					cgs.mapVoteListOffset = maxofs;
+				}
+				if ( cgs.mapVoteListOffset < 0 ) {
+					cgs.mapVoteListOffset = 0;
+				}
+				return;
+			}
+			if( BG_PanelButtonsKeyEvent( key, down, mapVoteButtons ) ) {
+				return;
+			}
 			break;
 	}
 
@@ -2086,7 +2245,7 @@ qboolean CG_Debriefing_QCButton_KeyDown( panel_button_t* button, int key ) {
 
 qboolean CG_Debriefing_NextButton_KeyDown( panel_button_t* button, int key ) {
 	if( key == K_MOUSE1 ) {
-		cgs.dbMode = (cgs.dbMode + 1)%3;
+		cgs.dbMode = (cgs.dbMode + 1) % ( ( cgs.gametype == GT_WOLF_MAPVOTE ) ? 4 : 3 );
 		return qtrue;
 	}
 
@@ -2892,5 +3051,148 @@ void CG_Debriefing2TeamSkillXP_Draw( panel_button_t* button ) {
 
 		CG_Text_Paint_Ext( button->rect.x + 100 + skillPositions[ i ] - (w*0.5f), button->rect.y + 11, scale, scale, clrTxtBck, str, 0, 0, 0, &cgs.media.limboFont2 );
 	}
+}
+
+void CG_ParseMapVote( void ) {
+	const char *s = CG_ConfigString( CS_MAPVOTE );
+	int i, n, idx, c, local;
+	const char *chunk;
+	const char *mapChunks[2];
+	const char *longChunks[3];
+
+	cgs.mapVoteCount = 0;
+	cgs.mapVoteFlags = 0;
+	memset( cgs.mapVoteName, 0, sizeof( cgs.mapVoteName ) );
+	memset( cgs.mapVoteLong, 0, sizeof( cgs.mapVoteLong ) );
+	if ( !s || !s[0] ) {
+		return;
+	}
+	n = atoi( Info_ValueForKey( s, "n" ) );
+	if ( n < 0 ) {
+		n = 0;
+	}
+	if ( n > MAX_MAPVOTE_MAPS ) {
+		n = MAX_MAPVOTE_MAPS;
+	}
+	cgs.mapVoteFlags = atoi( Info_ValueForKey( s, "f" ) ) | MAPVOTE_MULTI_VOTE;
+	cgs.mapVoteCount = n;
+
+	mapChunks[0] = CG_ConfigString( CS_MAPVOTE_MAPS );
+	mapChunks[1] = CG_ConfigString( CS_MAPVOTE_MAPS2 );
+	idx = 0;
+	for ( c = 0; c < 2 && idx < n; c++ ) {
+		chunk = mapChunks[c];
+		if ( !chunk || !chunk[0] ) {
+			continue;
+		}
+		for ( local = 0; idx < n; local++ ) {
+			const char *tok = Info_ValueForKey( chunk, va( "%i", local ) );
+			if ( !tok[0] ) {
+				break;
+			}
+			Q_strncpyz( cgs.mapVoteName[idx], tok, sizeof( cgs.mapVoteName[idx] ) );
+			idx++;
+		}
+	}
+
+	longChunks[0] = CG_ConfigString( CS_MAPVOTE_LONG );
+	longChunks[1] = CG_ConfigString( CS_MAPVOTE_LONG2 );
+	longChunks[2] = CG_ConfigString( CS_MAPVOTE_LONG3 );
+	idx = 0;
+	for ( c = 0; c < 3 && idx < n; c++ ) {
+		chunk = longChunks[c];
+		if ( !chunk || !chunk[0] ) {
+			continue;
+		}
+		for ( local = 0; idx < n; local++ ) {
+			const char *tok = Info_ValueForKey( chunk, va( "%i", local ) );
+			if ( !tok[0] ) {
+				break;
+			}
+			Q_strncpyz( cgs.mapVoteLong[idx], tok, sizeof( cgs.mapVoteLong[idx] ) );
+			idx++;
+		}
+	}
+
+	for ( i = 0; i < n; i++ ) {
+		if ( !cgs.mapVoteLong[i][0] ) {
+			Q_strncpyz( cgs.mapVoteLong[i], cgs.mapVoteName[i], sizeof( cgs.mapVoteLong[i] ) );
+		}
+		cgs.mapVoteTally[i] = atoi( Info_ValueForKey( s, va( "v%i", i ) ) );
+	}
+}
+
+void CG_MapVote_List_Draw( panel_button_t* button ) {
+	int i, idx;
+	float y;
+	vec4_t row = { 1.f, 1.f, 1.f, 0.8f };
+	vec4_t pick = { 1.f, 1.f, 0.4f, 1.f };
+	vec4_t hi = { 1.f, 1.f, 1.f, 0.12f };
+
+	if ( cgs.mapVoteCount <= 0 ) {
+		CG_Text_Paint_Ext( button->rect.x, button->rect.y + 12, 0.20f, 0.20f, row, "No maps available to vote.", 0, 0, 0, &cgs.media.limboFont2 );
+		return;
+	}
+
+	y = button->rect.y + 12;
+	for ( i = 0; i < 20; i++ ) {
+		idx = i + cgs.mapVoteListOffset;
+		if ( idx >= cgs.mapVoteCount ) {
+			break;
+		}
+		if ( cgs.mapVotePicked == idx ) {
+			CG_FillRect( button->rect.x, y - 10, button->rect.w, 12, hi );
+		}
+		{
+			vec4_t col;
+			const char *name = cgs.mapVoteLong[idx][0] ? cgs.mapVoteLong[idx] : cgs.mapVoteName[idx];
+			if ( cgs.mapVotePicked == idx ) {
+				Vector4Copy( pick, col );
+			} else {
+				Vector4Copy( row, col );
+			}
+			CG_Text_Paint_Ext( button->rect.x + 4, y, 0.20f, 0.20f, col, name, 0, 0, 0, &cgs.media.limboFont2 );
+			CG_Text_Paint_Ext( button->rect.x + button->rect.w - 28, y, 0.20f, 0.20f, col, va( "%i", cgs.mapVoteTally[idx] ), 0, 0, 0, &cgs.media.limboFont2 );
+		}
+		y += 12;
+	}
+}
+
+qboolean CG_MapVote_List_KeyDown( panel_button_t* button, int key ) {
+	int row;
+
+	if ( key != K_MOUSE1 ) {
+		return qfalse;
+	}
+	if ( cgs.mapVoteCount <= 0 ) {
+		return qfalse;
+	}
+	row = (int)( ( cgs.cursorY - button->rect.y ) / 12 ) + cgs.mapVoteListOffset;
+	if ( row < 0 || row >= cgs.mapVoteCount ) {
+		return qfalse;
+	}
+	cgs.mapVotePicked = row;
+	return qtrue;
+}
+
+void CG_MapVote_VoteButton_Draw( panel_button_t* button ) {
+	CG_PanelButtonsRender_Button( button );
+}
+
+qboolean CG_MapVote_VoteButton_KeyDown( panel_button_t* button, int key ) {
+	int rank = button->data[0];
+
+	if ( key != K_MOUSE1 ) {
+		return qfalse;
+	}
+	if ( cgs.mapVotePicked < 0 || cgs.mapVotePicked >= cgs.mapVoteCount ) {
+		return qfalse;
+	}
+	if ( rank < 1 || rank > 3 ) {
+		return qfalse;
+	}
+	cgs.mapVoteFor[rank - 1] = cgs.mapVotePicked;
+	trap_SendClientCommand( va( "mapvote %i %i", cgs.mapVotePicked, rank ) );
+	return qtrue;
 }
 

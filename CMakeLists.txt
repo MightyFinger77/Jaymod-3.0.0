@@ -73,7 +73,7 @@ set(LUA_SRCS
 )
 set_source_files_properties(${LUA_SRCS} PROPERTIES LANGUAGE C)
 
-file(GLOB GAME_SRCS
+file(GLOB GAME_SRCS CONFIGURE_DEPENDS
     src/game/*.cpp
     src/game/cmd/*.cpp
     src/game/cvar/*.cpp

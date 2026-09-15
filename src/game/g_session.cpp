@@ -267,6 +267,7 @@ void G_ReadSessionData( gclient_t *client )
                 break;
 	case GT_WOLF_LMS:
 	case GT_WOLF:
+	case GT_WOLF_MAPVOTE:
 		if( g_xpSave.integer )
 			load = qtrue;
     default:

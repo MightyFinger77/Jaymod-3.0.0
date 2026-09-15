@@ -475,6 +475,7 @@ toString( gametype_t type, string& out )
         case GT_WOLF_STOPWATCH:  out = "STOPWATCH";  return out;
         case GT_WOLF_CAMPAIGN:   out = "CAMPAIGN";   return out;
         case GT_WOLF_LMS:        out = "LMS";        return out;
+        case GT_WOLF_MAPVOTE:    out = "MAPVOTE";    return out;
 
         default:
             break;

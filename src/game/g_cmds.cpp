@@ -3672,6 +3672,9 @@ void ClientCommand( int clientNum ) {
 	} else if( !Q_stricmp( cmd, "imready" ) ) {		
 		Cmd_IntermissionReady_f( ent );
 		return;
+	} else if( !Q_stricmp( cmd, "mapvote" ) ) {
+		G_MapVote_Command( ent );
+		return;
 	} else if (Q_stricmp (cmd, "ws") == 0) {
 		Cmd_WeaponStat_f( ent );
 		return;

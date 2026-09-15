@@ -860,7 +860,7 @@ static void CG_DrawUpperRight( void ) {
 */
 
 #define CHATLOC_X 200
-#define CHATLOC_Y 474
+#define CHATLOC_Y 480
 #define CHATLOC_TEXT_X (CHATLOC_X + 0.25f * TINYCHAR_WIDTH)
 
 /*

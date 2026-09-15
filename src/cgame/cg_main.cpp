@@ -2952,7 +2952,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qb
 	cgs.campaignInfoLoaded = qfalse;
 	if( cgs.gametype == GT_WOLF_CAMPAIGN ) {
 		CG_LocateCampaign();
-	} else if( cgs.gametype == GT_WOLF_STOPWATCH || cgs.gametype == GT_WOLF_LMS || cgs.gametype == GT_WOLF ) {
+	} else if( cgs.gametype == GT_WOLF_STOPWATCH || cgs.gametype == GT_WOLF_LMS || cgs.gametype == GT_WOLF || cgs.gametype == GT_WOLF_MAPVOTE ) {
 		CG_LocateArena();
 	}
 
@@ -3095,6 +3095,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qb
 	CG_ParseJaymodinfo();
 	CG_ParseSkillLevels();
 	CG_ParseWeaponAmmo();
+	CG_ParseMapVote();
 	CG_SetJayFlags();
 	CG_SetMACAddress();
 

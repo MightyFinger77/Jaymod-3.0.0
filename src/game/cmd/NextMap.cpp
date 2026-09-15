@@ -26,9 +26,20 @@ NextMap::doExecute( Context& txt )
         return PA_USAGE;
 
     switch ((gamestate_t)cvars::gameState.ivalue) {
+        case GS_INTERMISSION:
+            if (g_gametype.integer == GT_WOLF_MAPVOTE) {
+                txt._ebuf << "Map vote is already running. Wait for the timer, or click READY.";
+                return PA_ERROR;
+            }
+            ExitLevel();
+            break;
+
         case GS_WARMUP_COUNTDOWN:
         case GS_WARMUP:
-        case GS_INTERMISSION:
+            if (g_gametype.integer == GT_WOLF_MAPVOTE) {
+                BeginIntermission();
+                break;
+            }
             ExitLevel();
             break;
 

@@ -847,6 +847,7 @@ typedef struct {
 //unlagged - true ping
 
 	int			joinedTeamTime;
+	int			mapVote[3];
 } clientPersistant_t;
 
 typedef struct {
@@ -1576,6 +1577,11 @@ void SetClientViewAngle( gentity_t *ent, vec3_t angle );
 gentity_t *SelectSpawnPoint ( const vec3_t avoidPoint, vec3_t origin, vec3_t angles );
 void respawn (gentity_t *ent);
 void BeginIntermission (void);
+void G_MapVote_Init( void );
+void G_MapVote_BeginIntermission( void );
+void G_MapVote_Command( gentity_t *ent );
+qboolean G_MapVote_EnoughVoted( void );
+const char *G_MapVote_WinningMap( void );
 void InitClientPersistant (gclient_t *client);
 void InitClientResp (gclient_t *client);
 void InitBodyQue (void);

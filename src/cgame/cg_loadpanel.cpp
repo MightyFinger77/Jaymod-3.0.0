@@ -212,6 +212,8 @@ const char* CG_LoadPanel_GameTypeName( gametype_t gt ) {
 			return "Campaign";
 		case GT_WOLF_LMS:
 			return "Last Man Standing";
+		case GT_WOLF_MAPVOTE:
+			return "Map Voting";
 		default:
 			break;
 	}

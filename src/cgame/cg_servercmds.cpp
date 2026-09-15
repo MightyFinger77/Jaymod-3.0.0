@@ -700,6 +700,15 @@ void CG_ConfigStringModified( void )
             CG_ParseWeaponAmmo();
             return;
 
+        case CS_MAPVOTE:
+        case CS_MAPVOTE_MAPS:
+        case CS_MAPVOTE_MAPS2:
+        case CS_MAPVOTE_LONG:
+        case CS_MAPVOTE_LONG2:
+        case CS_MAPVOTE_LONG3:
+            CG_ParseMapVote();
+            return;
+
         case CS_REINFSEEDS:
             CG_ParseReinforcementTimes( csval ); // OSP - set reinforcement times for each team
             return;

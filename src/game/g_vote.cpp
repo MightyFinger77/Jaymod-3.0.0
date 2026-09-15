@@ -27,7 +27,8 @@ static const char *gameNames[] = {
 	"Objective",
 	"Stopwatch",
 	"Campaign",
-	"Last Man Standing"
+	"Last Man Standing",
+	"Map Voting"
 };
 
 
@@ -688,9 +689,18 @@ int G_Nextmap_v(gentity_t *ent, unsigned int dwVoteIndex, char *arg, char *arg2,
 			trap_SendConsoleCommand(EXEC_APPEND, "vstr nextcampaign\n");
 			AP("cp \"^3*** Loading nextcampaign! ***\n\"");
 		} else {
-			// Load in the nextmap
-			trap_SendConsoleCommand(EXEC_APPEND, "vstr nextmap\n");
-			AP("cp \"^3*** Loading nextmap! ***\n\"");
+			if ( g_gametype.integer == GT_WOLF_MAPVOTE ) {
+				if ( cvars::gameState.ivalue == GS_PLAYING ) {
+					LogExit( "nextmap vote." );
+					AP("cp \"^3*** Vote for the next map! ***\n\"");
+				} else if ( cvars::gameState.ivalue != GS_INTERMISSION ) {
+					BeginIntermission();
+					AP("cp \"^3*** Vote for the next map! ***\n\"");
+				}
+			} else {
+				trap_SendConsoleCommand(EXEC_APPEND, "vstr nextmap\n");
+				AP("cp \"^3*** Loading nextmap! ***\n\"");
+			}
 		}
 	}
 

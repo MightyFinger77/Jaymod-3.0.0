@@ -216,6 +216,10 @@ vmCvar_t		g_dropAmmo;
 vmCvar_t		g_saveCampaignStats;
 vmCvar_t		g_intermissionTime;
 vmCvar_t		g_intermissionReadyPercent;
+vmCvar_t		g_maxMapsVotedFor;
+vmCvar_t		g_minMapAge;
+vmCvar_t		g_excludedMaps;
+vmCvar_t		g_mapVoteFlags;
 vmCvar_t		g_spectator;
 vmCvar_t		g_spawnInvul;
 vmCvar_t		g_shoveNoZ;
@@ -321,6 +325,10 @@ cvarTable_t		gameCvarTable[] = {
 	{ &g_saveCampaignStats,	"g_saveCampaignStats",	"1",		CVAR_ARCHIVE },
 	{ &g_intermissionTime,	"g_intermissionTime",	"60",		0 },
 	{ &g_intermissionReadyPercent, "g_intermissionReadyPercent", "100", 0 },
+	{ &g_maxMapsVotedFor,	"g_maxMapsVotedFor",	"0",		0 },
+	{ &g_minMapAge,			"g_minMapAge",			"3",		0 },
+	{ &g_excludedMaps,		"g_excludedMaps",		":oasis:goldrush:radar:railgun:fueldump:",		0 },
+	{ &g_mapVoteFlags,		"g_mapVoteFlags",		"20",		0 },
 	{ &g_spectator,			"g_spectator",			"0",		CVAR_ARCHIVE },
 	{ &g_spawnInvul,		"g_spawnInvul",			"3",		CVAR_ARCHIVE },
 	{ &g_shoveNoZ,			"g_shoveNoZ",			"0",		CVAR_ARCHIVE },
@@ -1593,7 +1601,7 @@ void G_UpdateCvars( void )
 					}
 
 					if(!level.latchGametype && cvars::gameState.ivalue == GS_PLAYING && 
-					  ( ( ( g_gametype.integer == GT_WOLF || g_gametype.integer == GT_WOLF_CAMPAIGN ) && (worldspawnflags & NO_GT_WOLF)) ||	
+					  ( ( ( g_gametype.integer == GT_WOLF || g_gametype.integer == GT_WOLF_CAMPAIGN || g_gametype.integer == GT_WOLF_MAPVOTE ) && (worldspawnflags & NO_GT_WOLF)) ||	
 					  (g_gametype.integer == GT_WOLF_STOPWATCH && (worldspawnflags & NO_STOPWATCH)) ||
 					  (g_gametype.integer == GT_WOLF_LMS && (worldspawnflags & NO_LMS)) )
 					  ) {
@@ -1979,7 +1987,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 		trap_SetConfigstring( CS_ROUNDSCORES2, va("%i", g_alliedwins.integer ) );
 	}
 
-	if( g_gametype.integer == GT_WOLF ) {
+	if( g_gametype.integer == GT_WOLF || g_gametype.integer == GT_WOLF_MAPVOTE ) {
 		//bani - #113
 		bani_clearmapxp();
 	}
@@ -2003,6 +2011,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	Q_strncpyz( level.rawmapname, Info_ValueForKey( cs, "mapname" ), sizeof(level.rawmapname) );
 
 	G_ParseCampaigns();
+	G_MapVote_Init();
 	if( g_gametype.integer == GT_WOLF_CAMPAIGN ) {
 		if( g_campaigns[level.currentCampaign].current == 0 || level.newCampaign ) {
 			trap_Cvar_Set( "g_axiswins", "0" );
@@ -2237,7 +2246,7 @@ void G_ShutdownGame( int restart ) {
 
 	// Arnout: gametype latching
 	if	( 
-		( ( g_gametype.integer == GT_WOLF || g_gametype.integer == GT_WOLF_CAMPAIGN ) && (g_entities[ENTITYNUM_WORLD].r.worldflags & NO_GT_WOLF)) ||
+		( ( g_gametype.integer == GT_WOLF || g_gametype.integer == GT_WOLF_CAMPAIGN || g_gametype.integer == GT_WOLF_MAPVOTE ) && (g_entities[ENTITYNUM_WORLD].r.worldflags & NO_GT_WOLF)) ||
 		(g_gametype.integer == GT_WOLF_STOPWATCH && (g_entities[ENTITYNUM_WORLD].r.worldflags & NO_STOPWATCH)) ||
 		(g_gametype.integer == GT_WOLF_LMS && (g_entities[ENTITYNUM_WORLD].r.worldflags & NO_LMS))		
 		) {
@@ -2727,6 +2736,19 @@ void BeginIntermission( void ) {
 
 	trap_SetConfigstring( CS_INTERMISSION_START_TIME, va( "%i", level.intermissiontime ) );
     cvars::gameState.set( GS_INTERMISSION );
+	level.ref_allready = qfalse;
+
+	for ( i = 0; i < level.maxclients; i++ ) {
+		if ( !level.clients[i].pers.connected ) {
+			continue;
+		}
+		level.clients[i].pers.ready = qfalse;
+		level.clients[i].pers.mapVote[0] = 0;
+		level.clients[i].pers.mapVote[1] = 0;
+		level.clients[i].pers.mapVote[2] = 0;
+		level.clients[i].ps.eFlags &= ~EF_READY;
+		g_entities[i].s.eFlags &= ~EF_READY;
+	}
 
 	FindIntermissionPoint();
 
@@ -2740,6 +2762,8 @@ void BeginIntermission( void ) {
 
 	// send the current scoring to all clients
 	SendScoreboardMessageToAllClients();
+
+	G_MapVote_BeginIntermission();
 
 	// Display some final statistics
 	G_BinocWar( qtrue );		// Binocular War
@@ -2797,6 +2821,13 @@ void ExitLevel (void) {
 			trap_SendConsoleCommand( EXEC_APPEND, "vstr nextmap\n" );
 		} else {
 			trap_SendConsoleCommand( EXEC_APPEND, "map_restart 0\n" );
+		}
+	} else if( g_gametype.integer == GT_WOLF_MAPVOTE ) {
+		const char *winner = G_MapVote_WinningMap();
+		if ( winner && winner[0] ) {
+			trap_SendConsoleCommand( EXEC_APPEND, va( "map %s\n", winner ) );
+		} else {
+			trap_SendConsoleCommand( EXEC_APPEND, "vstr nextmap\n" );
 		}
 	} else {
 		trap_SendConsoleCommand( EXEC_APPEND, "vstr nextmap\n" );
@@ -3087,7 +3118,7 @@ void LogExit( const char *string ) {
 			trap_Cvar_Set( "g_currentRound", va( "%i", g_currentRound.integer + 1 ) );
 			trap_Cvar_Update( &g_currentRound );
 		}
-	} else if( g_gametype.integer == GT_WOLF ) {
+	} else if( g_gametype.integer == GT_WOLF || g_gametype.integer == GT_WOLF_MAPVOTE ) {
 
 		//bani - #113
 		bani_storemapxp();
@@ -3136,7 +3167,9 @@ void CheckIntermissionExit( void ) {
 
 		if ( cl->pers.connected != CON_CONNECTED || cl->sess.sessionTeam == TEAM_SPECTATOR ) {
 			continue;
-		} else if ( cl->pers.ready || ( g_entities[level.sortedClients[i]].r.svFlags & SVF_BOT ) ) {
+		} else if ( g_entities[level.sortedClients[i]].r.svFlags & SVF_BOT ) {
+			continue;
+		} else if ( cl->pers.ready ) {
 			ready++;
 		} else {
 			notReady++;
@@ -3153,6 +3186,12 @@ void CheckIntermissionExit( void ) {
 		exit = qtrue;
 	} else {
 		exit = qfalse;
+	}
+
+	if ( g_gametype.integer == GT_WOLF_MAPVOTE && ( g_mapVoteFlags.integer & MAPVOTE_WAIT_FOR_VOTES ) ) {
+		if ( !G_MapVote_EnoughVoted() ) {
+			exit = qfalse;
+		}
 	}
 
 	// Gordon: changing this to a minute for now

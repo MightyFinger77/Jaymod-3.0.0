@@ -136,6 +136,30 @@ The old one-line form still works. `skill` / `skill2` are OR:
 
 If a weapon has `<weaponammo>` tiers, the vanilla skill-1 extra clip at spawn is skipped so it does not bypass your gates. Clients need this 3.1.0 pk3 so reload prediction matches the server.
 
+## Map voting
+
+Same idea as Nitmod / ETPub: `g_gametype 6` plays like objective, then players pick the next map on the intermission screen. `g_xpSave` is unchanged.
+
+Keep gametype 6 on every map in the cycle. Hide stock maps with `g_excludedMaps` (same format as Nitmod):
+
+```
+set g_gametype 6
+set g_excludedMaps ":oasis:goldrush:radar:railgun:fueldump:"
+set g_maxMapsVotedFor "0"
+```
+
+`0` means every map that is not excluded is on the ballot (up to 96), including the map just played. `g_minMapAge` is ignored in that mode. Add `:battery:` if you also want Battery hidden. On map start the console prints each excluded name and `Map vote: N maps in pool (X excluded, Y .bsp from FS)`.
+
+| Cvar | Default | |
+| --- | --- | --- |
+| `g_maxMapsVotedFor` | `0` | How many maps appear on the list. `0` = all that are not excluded (max 96), including the map just played |
+| `g_minMapAge` | `3` | Hide maps played this recently (in maps). Ignored when `g_maxMapsVotedFor` is `0` |
+| `g_excludedMaps` | `:oasis:goldrush:radar:railgun:fueldump:` | `:bspname:` to hide those maps |
+| `g_mapVoteFlags` | `20` | `1` least-played wins ties, `2` wait until `g_intermissionReadyPercent` have voted, `4` three ranked votes (3/2/1), `8` keep list order, `16` callvote nextmap opens the vote screen |
+| `g_intermissionTime` | `60` | Seconds before the winner loads |
+
+No votes → `vstr nextmap`. Map history is stored in `mapvoteinfo.txt` in the jaymod folder.
+
 ## Checklist
 
 - [ ] 64-bit `etlded.exe`

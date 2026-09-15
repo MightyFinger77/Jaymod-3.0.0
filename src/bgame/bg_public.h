@@ -389,6 +389,12 @@ extern const unsigned int aReinfSeeds[MAX_REINFSEEDS];
 #define CS_AVAILABLESTRIKES				42
 #define CS_SKILLLEVELS					43
 #define CS_WEAPONAMMO					44
+#define CS_MAPVOTE						45
+#define CS_MAPVOTE_MAPS					46
+#define CS_MAPVOTE_MAPS2				47
+#define CS_MAPVOTE_LONG					48
+#define CS_MAPVOTE_LONG2				49
+#define CS_MAPVOTE_LONG3				50
 
 #define	CS_MODELS						64
 #define	CS_SOUNDS						( CS_MODELS +				MAX_MODELS					)
@@ -419,8 +425,16 @@ typedef enum {
 	GT_WOLF_STOPWATCH,
 	GT_WOLF_CAMPAIGN,	// Exactly the same as GT_WOLF, but uses campaign roulation (multiple maps form one virtual map)
 	GT_WOLF_LMS,
+	GT_WOLF_MAPVOTE,	// intermission map vote (etpub / Nitmod g_gametype 6)
 	GT_MAX_GAME_TYPE
 } gametype_t;
+
+#define MAX_MAPVOTE_MAPS 96
+#define MAPVOTE_TIE_LEASTPLAYED  1
+#define MAPVOTE_WAIT_FOR_VOTES   2
+#define MAPVOTE_MULTI_VOTE       4
+#define MAPVOTE_NO_RANDOMIZE     8
+#define MAPVOTE_NEXTMAP_VOTEMAP 16
 
 typedef enum {
 	WEAP_IDLE1,

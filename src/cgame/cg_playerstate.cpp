@@ -549,10 +549,10 @@ void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops )
 	if ( cg.snap->ps.pm_type != PM_INTERMISSION 
 		&& ps->persistant[PERS_TEAM] != TEAM_SPECTATOR ) {
 		CG_CheckLocalSounds( ps, ops );
+		// Skip for spectators: free-fly has no/empty weapons, so unfollowing
+		// would play the empty-magazine click (fire_dry.wav).
+		CG_CheckAmmo();
 	}
-
-	// check for going low on ammo
-	CG_CheckAmmo();
 
 	if( ps->eFlags & EF_PRONE_MOVING ) {
 		if( ps->weapon == WP_BINOCULARS ) {

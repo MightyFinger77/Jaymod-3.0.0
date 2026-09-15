@@ -1233,6 +1233,7 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand ("setviewpos");
 	trap_AddCommand ("callvote");
 	trap_AddCommand ("vote");
+	trap_AddCommand ("mapvote");
 
 	// Rafael
 	trap_AddCommand ("nofatigue");

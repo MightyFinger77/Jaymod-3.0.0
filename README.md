@@ -87,6 +87,7 @@ The API follows the [published ET: Legacy Lua docs](https://etlegacy-lua-docs.re
 - Country/city: not shipped. Each operator downloads their own `GeoLite2-City.mmdb` and/or `GeoLite2-Country.mmdb` from MaxMind and puts it next to `qagame`. City is preferred (includes country). Legacy `GeoIP.dat` still works.
 - Widescreen HUD/UI (`jay_fixedAspect`, default `1`): ETJump-style layout — no stretch, centered menus/limbo/load/exit/tab, TTF in-game text. Centered messages (first blood, center print, objectives) use real glyph width. `0` is the old stretched look. Do not use ETL’s archived `cg_fixedAspect`.
 - Spectators can open the **V** vsay menu and send global vsay. Team / fireteam vsay stays off. `match_mutespecs` still applies.
+- Map voting: `g_gametype 6`. `g_excludedMaps` defaults to `:oasis:goldrush:radar:railgun:fueldump:`. `g_maxMapsVotedFor 0` lists every map that is not excluded, including the one just played. See [server.md](docs/server.md#map-voting).
 
 ## What 3.0.0 already added
 
@@ -134,7 +135,7 @@ More: [docs/build.md](docs/build.md).
 | [docs/server.md](docs/server.md) | Install, homepath, clients, Omni-bot, Enhanced Mod, ammo tiers |
 | [docs/lua.md](docs/lua.md) | Cvars, callbacks, `et.*` API |
 | [docs/changelog.md](docs/changelog.md) | 2.2.0 → 2.3.0 → 3.0.0 → 3.1.0 |
-| [docs/cvars.md](docs/cvars.md) | New cvars plus the classic 2.2.0 list |
+| [docs/cvar.md](docs/cvar.md) | Every `jaymod.cfg` setting plus 2.3.0 / 3.0.0 / 3.1.0 cvars |
 | [docs/build.md](docs/build.md) | CMake, outputs, what not to use |
 
 ## Credits
