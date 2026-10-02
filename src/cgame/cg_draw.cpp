@@ -737,13 +737,21 @@ static float CG_DrawTimer( float y ) {
 	int			w;
 	int			mins, seconds, tens;
 	int			msec;
+	int			team;
 	const char*	rt;
+	const char*	tl;
 	vec4_t		color =				{ 0.625f,	0.625f,	0.6f,	1.0f	};
 	vec4_t		timerBackground =	{ 0.16f,	0.2f,	0.17f,	0.8f	};
 	vec4_t		timerBorder     =	{ 0.5f,		0.5f,	0.5f,	0.5f	};
 
-	// CHRUKER: b018 - Respawn timer shouldn't be shown in spectator mode
-	rt = (cgs.gametype != GT_WOLF_LMS && (cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR || cg.snap->ps.pm_flags & PMF_FOLLOW) && cg_drawReinforcementTime.integer > 0) ?
+	/* Mapscripts set timelimit after connect. Re-read serverinfo so a
+	 * missed configstring update cannot leave the HUD with 0. */
+	tl = Info_ValueForKey( CG_ConfigString( CS_SERVERINFO ), "timelimit" );
+	if ( tl && tl[0] )
+		cgs.timelimit = atof( tl );
+
+	team = cg.snap->ps.persistant[PERS_TEAM];
+	rt = (cgs.gametype != GT_WOLF_LMS && team != TEAM_SPECTATOR && team != TEAM_FREE) ?
 							va("^F%d%s", CG_CalculateReinfTime( qfalse ), ((cgs.timelimit <= 0.0f) ? "" : " ")) : "";
 
 	msec = int( cgs.timelimit * 60.f * 1000.f ) - ( cg.time - cgs.levelStartTime );
@@ -5089,10 +5097,9 @@ static void CG_Draw2D( void ) {
 			CG_DrawNewCompass();
 		}
 
-		/* Far-right mission / reinf countdown — after compass so it sits on top,
-		 * just below the circular minimap (ETL-style ~152). When the command map
-		 * is expanded, pin to the top edge so it stays readable over the map. */
-		if ( !cg_paused.integer && cg_drawRoundTimer.integer ) {
+		/* Always draw. cg_drawRoundTimer is archived and often 0 from older
+		 * configs, which hid the countdown entirely. */
+		if ( !cg_paused.integer ) {
 			float timerY = 152.f;
 			if ( cgs.autoMapExpanded ) {
 				timerY = 4.f;
