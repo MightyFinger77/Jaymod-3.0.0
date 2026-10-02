@@ -281,12 +281,15 @@ static void G_MapVote_WriteStatsCS( void ) {
 	for ( i = 0; i < ballotCount && slot < 2; i++ ) {
 		char val[64];
 		int p = ballot[i];
-		int age = 0, votes = 0;
+		int age = 0, votes = 0, plays = 0;
 		if ( p >= 0 && p < poolCount ) {
-			age = pool[p].age;
+			/* Never-played maps keep age for minMapAge bookkeeping, but the
+			 * client shows "never" from plays==0 — do not leak a fake age. */
+			plays = pool[p].plays;
+			age = ( plays > 0 ) ? pool[p].age : 0;
 			votes = pool[p].votes + ballotVotes[i];
 		}
-		Com_sprintf( val, sizeof( val ), "%i %i", age, votes );
+		Com_sprintf( val, sizeof( val ), "%i %i %i", age, votes, plays );
 		if ( !G_MapVote_InfoFits( buf, va( "%i", local ), val ) ) {
 			trap_SetConfigstring( csIds[slot], buf );
 			slot++;
@@ -481,7 +484,8 @@ void G_MapVote_BeginIntermission( void ) {
 		if ( !showAll && !Q_stricmp( pool[i].bsp, level.rawmapname ) ) {
 			continue;
 		}
-		if ( !showAll && pool[i].age < minAge ) {
+		/* Never-played maps are always eligible; age is only "maps since last play". */
+		if ( !showAll && pool[i].plays > 0 && pool[i].age < minAge ) {
 			continue;
 		}
 		eligible[eligCount++] = i;

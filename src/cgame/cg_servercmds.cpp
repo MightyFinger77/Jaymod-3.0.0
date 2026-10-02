@@ -706,6 +706,8 @@ void CG_ConfigStringModified( void )
         case CS_MAPVOTE_LONG:
         case CS_MAPVOTE_LONG2:
         case CS_MAPVOTE_LONG3:
+        case CS_MAPVOTE_STATS:
+        case CS_MAPVOTE_STATS2:
             CG_ParseMapVote();
             return;
 

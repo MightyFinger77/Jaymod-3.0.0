@@ -2163,6 +2163,7 @@ typedef struct {
 	int					mapVoteTally[MAX_MAPVOTE_MAPS];
 	int					mapVoteAge[MAX_MAPVOTE_MAPS];
 	int					mapVoteTotal[MAX_MAPVOTE_MAPS];
+	int					mapVotePlays[MAX_MAPVOTE_MAPS];
 	int					mapVotePicked;
 	int					mapVoteListOffset;
 	int					mapVoteFlags;

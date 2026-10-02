@@ -3094,6 +3094,7 @@ void CG_ParseMapVote( void ) {
 	memset( cgs.mapVoteLong, 0, sizeof( cgs.mapVoteLong ) );
 	memset( cgs.mapVoteAge, 0, sizeof( cgs.mapVoteAge ) );
 	memset( cgs.mapVoteTotal, 0, sizeof( cgs.mapVoteTotal ) );
+	memset( cgs.mapVotePlays, 0, sizeof( cgs.mapVotePlays ) );
 	if ( !s || !s[0] ) {
 		return;
 	}
@@ -3154,13 +3155,14 @@ void CG_ParseMapVote( void ) {
 		}
 		for ( local = 0; idx < n; local++ ) {
 			const char *tok = Info_ValueForKey( chunk, va( "%i", local ) );
-			int age = 0, votes = 0;
+			int age = 0, votes = 0, plays = 0;
 			if ( !tok[0] ) {
 				break;
 			}
-			sscanf( tok, "%i %i", &age, &votes );
+			sscanf( tok, "%i %i %i", &age, &votes, &plays );
 			cgs.mapVoteAge[idx] = age;
 			cgs.mapVoteTotal[idx] = votes;
+			cgs.mapVotePlays[idx] = plays;
 			idx++;
 		}
 	}
@@ -3244,7 +3246,8 @@ void CG_MapVote_Preview_Draw( panel_button_t* button ) {
 	}
 
 	y = button->rect.y + 14;
-	if ( cgs.mapVoteAge[idx] <= 0 && cgs.mapVoteTotal[idx] <= 0 ) {
+	/* plays==0 → never loaded on this server (age alone is stale/misleading). */
+	if ( cgs.mapVotePlays[idx] <= 0 ) {
 		CG_Text_Paint_Ext( button->rect.x + 4, y, 0.20f, 0.20f, yellow, "Last Played : never", 0, 0, 0, &cgs.media.limboFont2 );
 	} else {
 		CG_Text_Paint_Ext( button->rect.x + 4, y, 0.20f, 0.20f, yellow,
