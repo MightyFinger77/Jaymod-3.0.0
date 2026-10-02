@@ -4,12 +4,15 @@
 #define MAX_MAPVOTE_POOL 512
 #define MAPVOTEINFO_FILE "mapvoteinfo.txt"
 #define MAPVOTE_LIST_BUF 98304
+/* Survives map loads when console `set nextmap` after `map` is dropped. */
+#define MAPVOTE_CYCLE_CVAR "g_mapVoteNextCycle"
 
 typedef struct {
 	char bsp[MAX_QPATH];
 	char longname[64];
 	int age;
 	int plays;
+	int votes;	/* lifetime accumulated vote-score */
 } mapVotePool_t;
 
 static mapVotePool_t pool[MAX_MAPVOTE_POOL];
@@ -26,6 +29,27 @@ static int G_MapVote_FindPool( const char *bsp ) {
 		}
 	}
 	return -1;
+}
+
+void G_MapVote_RememberCycle( const char *nextcmd ) {
+	if ( !nextcmd || !nextcmd[0] ) {
+		return;
+	}
+	trap_Cvar_Set( MAPVOTE_CYCLE_CVAR, nextcmd );
+}
+
+void G_MapVote_LoadCycle( char *out, int outSize ) {
+	if ( !out || outSize < 2 ) {
+		return;
+	}
+	out[0] = '\0';
+	trap_Cvar_VariableStringBuffer( "nextmap", out, outSize );
+	if ( !out[0] ) {
+		trap_Cvar_VariableStringBuffer( MAPVOTE_CYCLE_CVAR, out, outSize );
+	}
+	if ( out[0] ) {
+		G_MapVote_RememberCycle( out );
+	}
 }
 
 static qboolean G_MapVote_Excluded( const char *bsp ) {
@@ -131,7 +155,7 @@ static void G_MapVote_ReadInfo( void ) {
 	fileHandle_t f;
 	int len, i;
 	char buf[16384];
-	char *p;
+	char *p, *lineEnd;
 
 	len = trap_FS_FOpenFile( MAPVOTEINFO_FILE, &f, FS_READ );
 	if ( len <= 0 ) {
@@ -147,29 +171,31 @@ static void G_MapVote_ReadInfo( void ) {
 	buf[len] = 0;
 	trap_FS_FCloseFile( f );
 
+	/* One map per line: name age plays [votes]. Votes is optional for
+	 * older 3-field mapvoteinfo.txt files. */
 	p = buf;
-	while ( 1 ) {
+	while ( *p ) {
 		char name[MAX_QPATH];
-		char *tok;
-		int age = 0, plays = 0;
-		tok = COM_Parse( &p );
-		if ( !tok[0] ) {
+		int age = 0, plays = 0, votes = 0, n;
+		lineEnd = strchr( p, '\n' );
+		if ( lineEnd ) {
+			*lineEnd = 0;
+		}
+		n = sscanf( p, "%63s %i %i %i", name, &age, &plays, &votes );
+		if ( n >= 3 && name[0] ) {
+			i = G_MapVote_FindPool( name );
+			if ( i >= 0 ) {
+				pool[i].age = age;
+				pool[i].plays = plays;
+				if ( n >= 4 ) {
+					pool[i].votes = votes;
+				}
+			}
+		}
+		if ( !lineEnd ) {
 			break;
 		}
-		Q_strncpyz( name, tok, sizeof( name ) );
-		tok = COM_Parse( &p );
-		if ( tok[0] ) {
-			age = atoi( tok );
-		}
-		tok = COM_Parse( &p );
-		if ( tok[0] ) {
-			plays = atoi( tok );
-		}
-		i = G_MapVote_FindPool( name );
-		if ( i >= 0 ) {
-			pool[i].age = age;
-			pool[i].plays = plays;
-		}
+		p = lineEnd + 1;
 	}
 }
 
@@ -183,7 +209,7 @@ static void G_MapVote_WriteInfo( void ) {
 		return;
 	}
 	for ( i = 0; i < poolCount; i++ ) {
-		Com_sprintf( line, sizeof( line ), "%s %i %i\n", pool[i].bsp, pool[i].age, pool[i].plays );
+		Com_sprintf( line, sizeof( line ), "%s %i %i %i\n", pool[i].bsp, pool[i].age, pool[i].plays, pool[i].votes );
 		trap_FS_Write( line, (int)strlen( line ), f );
 	}
 	trap_FS_FCloseFile( f );
@@ -241,6 +267,43 @@ static void G_MapVote_WriteInfoCS( const int *csIds, int ncs, qboolean longs ) {
 	}
 }
 
+static void G_MapVote_WriteStatsCS( void ) {
+	char buf[MAX_INFO_STRING];
+	int i, slot, local;
+	const int csIds[2] = { CS_MAPVOTE_STATS, CS_MAPVOTE_STATS2 };
+
+	buf[0] = 0;
+	slot = 0;
+	local = 0;
+	trap_SetConfigstring( CS_MAPVOTE_STATS, "" );
+	trap_SetConfigstring( CS_MAPVOTE_STATS2, "" );
+
+	for ( i = 0; i < ballotCount && slot < 2; i++ ) {
+		char val[64];
+		int p = ballot[i];
+		int age = 0, votes = 0;
+		if ( p >= 0 && p < poolCount ) {
+			age = pool[p].age;
+			votes = pool[p].votes + ballotVotes[i];
+		}
+		Com_sprintf( val, sizeof( val ), "%i %i", age, votes );
+		if ( !G_MapVote_InfoFits( buf, va( "%i", local ), val ) ) {
+			trap_SetConfigstring( csIds[slot], buf );
+			slot++;
+			local = 0;
+			buf[0] = 0;
+			if ( slot >= 2 ) {
+				break;
+			}
+		}
+		Info_SetValueForKey( buf, va( "%i", local ), val );
+		local++;
+	}
+	if ( slot < 2 ) {
+		trap_SetConfigstring( csIds[slot], buf );
+	}
+}
+
 static void G_MapVote_UpdateConfigString( void ) {
 	char cs[MAX_INFO_STRING];
 	int i;
@@ -256,6 +319,7 @@ static void G_MapVote_UpdateConfigString( void ) {
 	trap_SetConfigstring( CS_MAPVOTE, cs );
 	G_MapVote_WriteInfoCS( mapCs, 2, qfalse );
 	G_MapVote_WriteInfoCS( longCs, 3, qtrue );
+	G_MapVote_WriteStatsCS();
 }
 
 static int G_MapVote_RankWeight( int rank ) {
@@ -316,9 +380,20 @@ void G_MapVote_Init( void ) {
 	trap_SetConfigstring( CS_MAPVOTE_LONG, "" );
 	trap_SetConfigstring( CS_MAPVOTE_LONG2, "" );
 	trap_SetConfigstring( CS_MAPVOTE_LONG3, "" );
+	trap_SetConfigstring( CS_MAPVOTE_STATS, "" );
+	trap_SetConfigstring( CS_MAPVOTE_STATS2, "" );
 
 	if ( g_gametype.integer != GT_WOLF_MAPVOTE ) {
 		return;
+	}
+
+	/* Snapshot objectivecycle pointer so a later voted map cannot lose it. */
+	{
+		char nm[MAX_STRING_CHARS];
+		trap_Cvar_VariableStringBuffer( "nextmap", nm, sizeof( nm ) );
+		if ( nm[0] ) {
+			G_MapVote_RememberCycle( nm );
+		}
 	}
 
 	memset( list, 0, sizeof( list ) );
@@ -353,6 +428,7 @@ void G_MapVote_Init( void ) {
 		Q_strncpyz( pool[poolCount].longname, name, sizeof( pool[poolCount].longname ) );
 		pool[poolCount].age = 0;
 		pool[poolCount].plays = 0;
+		pool[poolCount].votes = 0;
 		poolCount++;
 	}
 
@@ -558,6 +634,14 @@ const char *G_MapVote_WinningMap( void ) {
 	if ( bestPool < 0 || bestPool >= poolCount || !pool[bestPool].bsp[0] ) {
 		return NULL;
 	}
+	/* Fold this intermission's scores into lifetime totals before write. */
+	for ( i = 0; i < ballotCount; i++ ) {
+		p = ballot[i];
+		if ( p >= 0 && p < poolCount && ballotVotes[i] > 0 ) {
+			pool[p].votes += ballotVotes[i];
+		}
+	}
+	G_MapVote_WriteInfo();
 	Q_strncpyz( winner, pool[bestPool].bsp, sizeof( winner ) );
 	G_Printf( "Map vote: loading %s (%i vote-score)\n", winner, bestVotes );
 	return winner;

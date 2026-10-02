@@ -1238,7 +1238,7 @@ panel_button_t mapVoteHeadingName = {
 panel_button_t mapVoteHeadingVotes = {
 	NULL,
 	"Score",
-	{ 540, 58, 0, 0 },
+	{ 268, 58, 0, 0 },
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	&mapVoteFont,
 	NULL,
@@ -1250,7 +1250,7 @@ panel_button_t mapVoteHeadingVotes = {
 panel_button_t mapVoteNamesList = {
 	NULL,
 	NULL,
-	{ 16, 62, 572, 242 },
+	{ 16, 62, 280, 242 },
 	{ 0, 0, 0, 0, 0, 0, 0, 0 },
 	&mapVoteFont,
 	CG_MapVote_List_KeyDown,
@@ -1262,12 +1262,24 @@ panel_button_t mapVoteNamesList = {
 panel_button_t mapVoteNamesListScroll = {
 	NULL,
 	NULL,
-	{ 598, 62, 16, 242 },
+	{ 298, 62, 16, 242 },
 	{ 3, 0, 0, 0, 0, 0, 0, 0 },
 	NULL,
 	CG_Debriefing_Scrollbar_KeyDown,
 	CG_Debriefing_Scrollbar_KeyUp,
 	CG_Debriefing_Scrollbar_Draw,
+	NULL,
+};
+
+panel_button_t mapVotePreview = {
+	NULL,
+	NULL,
+	{ 330, 58, 288, 246 },
+	{ 0, 0, 0, 0, 0, 0, 0, 0 },
+	&mapVoteFont,
+	NULL,
+	NULL,
+	CG_MapVote_Preview_Draw,
 	NULL,
 };
 
@@ -1314,6 +1326,7 @@ panel_button_t* mapVoteButtons[] = {
 	&mapVoteHeadingVotes,
 	&mapVoteNamesListScroll,
 	&mapVoteNamesList,
+	&mapVotePreview,
 	&mapVoteButton1,
 	&mapVoteButton2,
 	&mapVoteButton3,
@@ -3072,11 +3085,15 @@ void CG_ParseMapVote( void ) {
 	const char *chunk;
 	const char *mapChunks[2];
 	const char *longChunks[3];
+	const char *statChunks[2];
 
 	cgs.mapVoteCount = 0;
 	cgs.mapVoteFlags = 0;
+	cgs.mapVoteShot = 0;
 	memset( cgs.mapVoteName, 0, sizeof( cgs.mapVoteName ) );
 	memset( cgs.mapVoteLong, 0, sizeof( cgs.mapVoteLong ) );
+	memset( cgs.mapVoteAge, 0, sizeof( cgs.mapVoteAge ) );
+	memset( cgs.mapVoteTotal, 0, sizeof( cgs.mapVoteTotal ) );
 	if ( !s || !s[0] ) {
 		return;
 	}
@@ -3127,11 +3144,36 @@ void CG_ParseMapVote( void ) {
 		}
 	}
 
+	statChunks[0] = CG_ConfigString( CS_MAPVOTE_STATS );
+	statChunks[1] = CG_ConfigString( CS_MAPVOTE_STATS2 );
+	idx = 0;
+	for ( c = 0; c < 2 && idx < n; c++ ) {
+		chunk = statChunks[c];
+		if ( !chunk || !chunk[0] ) {
+			continue;
+		}
+		for ( local = 0; idx < n; local++ ) {
+			const char *tok = Info_ValueForKey( chunk, va( "%i", local ) );
+			int age = 0, votes = 0;
+			if ( !tok[0] ) {
+				break;
+			}
+			sscanf( tok, "%i %i", &age, &votes );
+			cgs.mapVoteAge[idx] = age;
+			cgs.mapVoteTotal[idx] = votes;
+			idx++;
+		}
+	}
+
 	for ( i = 0; i < n; i++ ) {
 		if ( !cgs.mapVoteLong[i][0] ) {
 			Q_strncpyz( cgs.mapVoteLong[i], cgs.mapVoteName[i], sizeof( cgs.mapVoteLong[i] ) );
 		}
 		cgs.mapVoteTally[i] = atoi( Info_ValueForKey( s, va( "v%i", i ) ) );
+	}
+
+	if ( cgs.mapVotePicked < 0 && n > 0 ) {
+		cgs.mapVotePicked = 0;
 	}
 }
 
@@ -3164,7 +3206,7 @@ void CG_MapVote_List_Draw( panel_button_t* button ) {
 			} else {
 				Vector4Copy( row, col );
 			}
-			CG_Text_Paint_Ext( button->rect.x + 4, y, 0.20f, 0.20f, col, name, 0, 0, 0, &cgs.media.limboFont2 );
+			CG_Text_Paint_Ext( button->rect.x + 4, y, 0.20f, 0.20f, col, name, 0, 36, 0, &cgs.media.limboFont2 );
 			CG_Text_Paint_Ext( button->rect.x + button->rect.w - 28, y, 0.20f, 0.20f, col, va( "%i", cgs.mapVoteTally[idx] ), 0, 0, 0, &cgs.media.limboFont2 );
 		}
 		y += 12;
@@ -3185,7 +3227,75 @@ qboolean CG_MapVote_List_KeyDown( panel_button_t* button, int key ) {
 		return qfalse;
 	}
 	cgs.mapVotePicked = row;
+	cgs.mapVoteShot = 0;
 	return qtrue;
+}
+
+void CG_MapVote_Preview_Draw( panel_button_t* button ) {
+	int idx = cgs.mapVotePicked;
+	vec4_t yellow = { 1.f, 1.f, 0.35f, 1.f };
+	vec4_t frame = { 0.2f, 0.25f, 0.2f, 0.85f };
+	vec4_t border = { 0.45f, 0.55f, 0.4f, 1.f };
+	float y;
+	qhandle_t shot;
+
+	if ( idx < 0 || idx >= cgs.mapVoteCount ) {
+		return;
+	}
+
+	y = button->rect.y + 14;
+	if ( cgs.mapVoteAge[idx] <= 0 && cgs.mapVoteTotal[idx] <= 0 ) {
+		CG_Text_Paint_Ext( button->rect.x + 4, y, 0.20f, 0.20f, yellow, "Last Played : never", 0, 0, 0, &cgs.media.limboFont2 );
+	} else {
+		CG_Text_Paint_Ext( button->rect.x + 4, y, 0.20f, 0.20f, yellow,
+			va( "Last Played : %i maps ago", cgs.mapVoteAge[idx] ), 0, 0, 0, &cgs.media.limboFont2 );
+	}
+	y += 16;
+	CG_Text_Paint_Ext( button->rect.x + 4, y, 0.20f, 0.20f, yellow,
+		va( "Total Accumulated Votes: %i", cgs.mapVoteTotal[idx] ), 0, 0, 0, &cgs.media.limboFont2 );
+
+	/* Small levelshot under the stats, large preview below. */
+	{
+		float sx = button->rect.x + button->rect.w - 92;
+		float sy = button->rect.y + 4;
+		float sw = 88;
+		float sh = 66;
+		CG_FillRect( sx - 1, sy - 1, sw + 2, sh + 2, border );
+		CG_FillRect( sx, sy, sw, sh, frame );
+	}
+
+	{
+		float px = button->rect.x + 4;
+		float py = button->rect.y + 48;
+		float pw = button->rect.w - 8;
+		float ph = button->rect.h - 54;
+
+		if ( !cgs.mapVoteShot && cgs.mapVoteName[idx][0] ) {
+			cgs.mapVoteShot = trap_R_RegisterShaderNoMip( va( "levelshots/%s", cgs.mapVoteName[idx] ) );
+			if ( !cgs.mapVoteShot ) {
+				cgs.mapVoteShot = trap_R_RegisterShaderNoMip( va( "levelshots/%s_cc", cgs.mapVoteName[idx] ) );
+			}
+			if ( !cgs.mapVoteShot ) {
+				cgs.mapVoteShot = trap_R_RegisterShaderNoMip( "levelshots/unknownmap" );
+			}
+		}
+		shot = cgs.mapVoteShot;
+		CG_FillRect( px - 1, py - 1, pw + 2, ph + 2, border );
+		CG_FillRect( px, py, pw, ph, frame );
+		if ( shot ) {
+			CG_DrawPic( px, py, pw, ph, shot );
+		}
+		/* Tiny inset preview matching Nitmod's top-right thumb. */
+		{
+			float sx = button->rect.x + button->rect.w - 92;
+			float sy = button->rect.y + 4;
+			float sw = 88;
+			float sh = 66;
+			if ( shot ) {
+				CG_DrawPic( sx, sy, sw, sh, shot );
+			}
+		}
+	}
 }
 
 void CG_MapVote_VoteButton_Draw( panel_button_t* button ) {

@@ -98,6 +98,8 @@ Use a real folder path. Do not point at an old 32-bit Pink/SteamCMD `omnibot` tr
 
 On a good load the console shows `OMNIBOT: load '...omnibot_et_x64.dll': success` then `initialization: success`.
 
+Spectators do not displace bots unless the server is full (no free client slots). Joining Axis/Allies still reduces MaxBots as usual. That matches Legacy: engine only kicks a bot for a connecting human when every slot is taken.
+
 Linux 64-bit: `omnibot_et.x86_64.so`.
 
 ## Enhanced Mod
@@ -166,9 +168,11 @@ set g_maxMapsVotedFor "0"
 | `g_intermissionTime` | `60` | Seconds before the winner loads |
 | `g_intermissionReadyPercent` | `100` | Percent of **human** players who must hit READY (or have voted, if flag `2`) to end intermission early |
 
+The vote panel lists maps on the left. Selecting a map shows last-played age, lifetime accumulated votes, and a `levelshots/<map>` preview (Nitmod-style).
+
 **READY / bots:** Intermission READY uses NoQuarter-style `imready` → server `G_MakeReady`. Only **humans** count toward the percent (playing + spectators). Omni-bot clients are ignored so a full bot server cannot block READY. Alone in spec still counts as one human.
 
-**No map votes:** If nobody ranks a map, the server runs `vstr nextmap` (your rotation). It does **not** pick a random ballot map. With votes, the highest-scoring map loads and `nextmap` is left alone.
+**No map votes:** If nobody ranks a map, the server runs `vstr nextmap` (your rotation). It does **not** pick a random ballot map. With votes, the highest-scoring map loads and the objectivecycle pointer (`nextmap` / `vstr dN`) is kept so the next no-vote resume continues mid-cycle instead of jumping back to `d1`.
 
 Map history is stored in `mapvoteinfo.txt` in the jaymod folder.
 

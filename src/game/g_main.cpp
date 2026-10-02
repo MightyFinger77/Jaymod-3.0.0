@@ -330,6 +330,8 @@ cvarTable_t		gameCvarTable[] = {
 	{ &g_minMapAge,			"g_minMapAge",			"3",		0 },
 	{ &g_excludedMaps,		"g_excludedMaps",		":oasis:goldrush:radar:railgun:fueldump:",		0 },
 	{ &g_mapVoteFlags,		"g_mapVoteFlags",		"20",		0 },
+	/* Internal: last objectivecycle nextmap (vstr dN). Not for admins to set. */
+	{ NULL,					"g_mapVoteNextCycle",	"",			CVAR_NORESTART },
 	/* ET Legacy browser architecture filter. 1=Win32, 256=Win64.
 	 * 3.1.0 pk3 ships both client arches — advertise both so Win64 ETL lists us. */
 	{ &g_oss,				"g_oss",				"257",		CVAR_SERVERINFO, 0, qfalse },
@@ -2972,18 +2974,29 @@ void ExitLevel (void) {
 	} else if( g_gametype.integer == GT_WOLF_MAPVOTE ) {
 		const char *winner = G_MapVote_WinningMap();
 
+		/* Prefer live nextmap; if a prior voted map dropped it, use the
+		 * g_mapVoteNextCycle backup so we resume objectivecycle mid-file. */
+		G_MapVote_LoadCycle( keepNextmap, sizeof( keepNextmap ) );
+
 		if ( winner && winner[0] ) {
 			/* Someone voted — load that map, keep the cycle pointer intact. */
 			if ( keepNextmap[0] ) {
-				trap_SendConsoleCommand( EXEC_APPEND, va( "map %s; set nextmap \"%s\"\n", winner, keepNextmap ) );
+				trap_Cvar_Set( "nextmap", keepNextmap );
+				G_MapVote_RememberCycle( keepNextmap );
+				/* Set nextmap in-engine and again after map (ETL-style) so a
+				 * cleared command buffer cannot reset the rotation to d1. */
+				trap_SendConsoleCommand( EXEC_APPEND,
+					va( "map %s; set nextmap %s\n", winner, keepNextmap ) );
 			} else {
 				trap_SendConsoleCommand( EXEC_APPEND, va( "map %s\n", winner ) );
 			}
-			G_LogPrintf( "ExitLevel: voted map %s\n", winner );
+			G_LogPrintf( "ExitLevel: voted map %s (cycle %s)\n",
+				winner, keepNextmap[0] ? keepNextmap : "(none)" );
 		} else if ( keepNextmap[0] ) {
 			/* Nobody voted — run the real rotation (vstr dN). Do NOT extract
 			 * the map and rewrite nextmap: that freezes nextmap on the same
 			 * vstr and reloads the same map forever. */
+			trap_Cvar_Set( "nextmap", keepNextmap );
 			trap_SendConsoleCommand( EXEC_APPEND, "vstr nextmap\n" );
 			G_LogPrintf( "ExitLevel: no votes, vstr nextmap (%s)\n", keepNextmap );
 		} else {

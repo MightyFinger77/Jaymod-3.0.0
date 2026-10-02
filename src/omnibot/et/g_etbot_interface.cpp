@@ -3735,8 +3735,18 @@ public:
 
 			ge = HandleFromEntity(&g_entities[i]);
 
-			info.m_Players[i].m_Team = GetEntityTeam(ge);
-			info.m_Players[i].m_Class = GetEntityClass(ge);
+			/* Spectators must not displace bots via Omni-bot MaxBots.
+			 * Legacy-style: only a full server (engine SV_DirectConnect)
+			 * kicks a bot to make room for a connecting human, including
+			 * one who stays in spectator. Reporting m_Team==0 keeps
+			 * GetNumPlayers() from counting specs as humans. */
+			if (g_entities[i].client->sess.sessionTeam == TEAM_SPECTATOR) {
+				info.m_Players[i].m_Team = 0;
+				info.m_Players[i].m_Class = 0;
+			} else {
+				info.m_Players[i].m_Team = GetEntityTeam(ge);
+				info.m_Players[i].m_Class = GetEntityClass(ge);
+			}
 			info.m_Players[i].m_Controller = IsBot(&g_entities[i])?
 				obPlayerInfo::Bot : obPlayerInfo::Human;
 		}

@@ -395,6 +395,8 @@ extern const unsigned int aReinfSeeds[MAX_REINFSEEDS];
 #define CS_MAPVOTE_LONG					48
 #define CS_MAPVOTE_LONG2				49
 #define CS_MAPVOTE_LONG3				50
+#define CS_MAPVOTE_STATS				51
+#define CS_MAPVOTE_STATS2				52
 
 #define	CS_MODELS						64
 #define	CS_SOUNDS						( CS_MODELS +				MAX_MODELS					)

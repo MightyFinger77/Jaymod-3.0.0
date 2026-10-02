@@ -535,7 +535,13 @@ int G_Map_v(gentity_t *ent, unsigned int dwVoteIndex, char *arg, char *arg2, qbo
 		} else {
 			Svcmd_ResetMatch_f(qtrue, qfalse);
 			trap_Cvar_VariableStringBuffer("nextmap", s, sizeof(s));
-			trap_SendConsoleCommand(EXEC_APPEND, va("map %s%s\n", level.voteInfo.vote_value, ((*s) ? va("; set nextmap \"%s\"", s) : "")));
+			if ( *s ) {
+				G_MapVote_RememberCycle( s );
+				trap_Cvar_Set( "nextmap", s );
+				trap_SendConsoleCommand(EXEC_APPEND, va("map %s; set nextmap %s\n", level.voteInfo.vote_value, s));
+			} else {
+				trap_SendConsoleCommand(EXEC_APPEND, va("map %s\n", level.voteInfo.vote_value));
+			}
 		}
 	}
 

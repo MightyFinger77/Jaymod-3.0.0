@@ -1587,6 +1587,8 @@ void G_MapVote_Command( gentity_t *ent );
 qboolean G_MapVote_EnoughVoted( void );
 const char *G_MapVote_WinningMap( void );
 const char *G_MapVote_NextInPool( void );
+void G_MapVote_RememberCycle( const char *nextcmd );
+void G_MapVote_LoadCycle( char *out, int outSize );
 void InitClientPersistant (gclient_t *client);
 void InitClientResp (gclient_t *client);
 void InitBodyQue (void);

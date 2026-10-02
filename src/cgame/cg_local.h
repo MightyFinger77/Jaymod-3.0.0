@@ -2161,10 +2161,13 @@ typedef struct {
 	char				mapVoteName[MAX_MAPVOTE_MAPS][MAX_QPATH];
 	char				mapVoteLong[MAX_MAPVOTE_MAPS][64];
 	int					mapVoteTally[MAX_MAPVOTE_MAPS];
+	int					mapVoteAge[MAX_MAPVOTE_MAPS];
+	int					mapVoteTotal[MAX_MAPVOTE_MAPS];
 	int					mapVotePicked;
 	int					mapVoteListOffset;
 	int					mapVoteFlags;
 	int					mapVoteFor[3];
+	qhandle_t			mapVoteShot;
 
 	int					tdbAxisMapsXP[SK_NUM_SKILLS][MAX_MAPS_PER_CAMPAIGN];
 	int					tdbAlliedMapsXP[SK_NUM_SKILLS][MAX_MAPS_PER_CAMPAIGN];
@@ -3650,6 +3653,7 @@ void CG_DebriefingXPHeader_Draw( panel_button_t* button );
 void CG_ParseMapVote( void );
 void CG_MapVote_List_Draw( panel_button_t* button );
 qboolean CG_MapVote_List_KeyDown( panel_button_t* button, int key );
+void CG_MapVote_Preview_Draw( panel_button_t* button );
 void CG_MapVote_VoteButton_Draw( panel_button_t* button );
 qboolean CG_MapVote_VoteButton_KeyDown( panel_button_t* button, int key );
 void CG_DebriefingTitle_Draw( panel_button_t* button );
