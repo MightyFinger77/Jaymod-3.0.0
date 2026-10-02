@@ -767,6 +767,11 @@ static float CG_DrawTimer( float y ) {
 		color[3] = 1.f;
 	}
 
+	/* Nothing to show (timelimit 0 and no reinf / spectator). */
+	if ( !s || !s[0] ) {
+		return y;
+	}
+
 	w = CG_Text_Width_Ext( s, 0.19f, 0, &cgs.media.limboFont1 );
 
 	CG_FillRect( UPPERRIGHT_X - w - 2, y, w + 5, 12 + 2, timerBackground );
@@ -825,13 +830,21 @@ static void CG_DrawUpperRight( void ) {
 		}
 	} // b008
 
+	/* Round / map timer must stay on-screen even with +mapexpand open.
+	 * Sit it just above the expanded command map when that is covering the
+	 * usual upper-right slot. */
+	if ( cg_drawRoundTimer.integer ) {
+		float timerY = y;
+		if ( cgs.autoMapExpanded ||
+			( !cgs.autoMapExpanded && ( cg.time - cgs.autoMapExpandTime < 250.f ) ) ) {
+			timerY = 4.f;
+		}
+		CG_DrawTimer( timerY );
+	}
+
 	if( !( cg.snap->ps.pm_flags & PMF_LIMBO ) && ( cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR ) &&
 		( cgs.autoMapExpanded || ( !cgs.autoMapExpanded && ( cg.time - cgs.autoMapExpandTime < 250.f ) ) ) )
 		return;
-
-	if ( cg_drawRoundTimer.integer ) {
-		y = CG_DrawTimer( y );
-	}
 
 	if ( cg_drawClock.integer ) {
 		y = CG_DrawClock( y );
