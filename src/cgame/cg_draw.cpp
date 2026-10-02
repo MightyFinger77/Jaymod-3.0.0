@@ -830,17 +830,8 @@ static void CG_DrawUpperRight( void ) {
 		}
 	} // b008
 
-	/* Round / map timer must stay on-screen even with +mapexpand open.
-	 * Sit it just above the expanded command map when that is covering the
-	 * usual upper-right slot. */
-	if ( cg_drawRoundTimer.integer ) {
-		float timerY = y;
-		if ( cgs.autoMapExpanded ||
-			( !cgs.autoMapExpanded && ( cg.time - cgs.autoMapExpandTime < 250.f ) ) ) {
-			timerY = 4.f;
-		}
-		CG_DrawTimer( timerY );
-	}
+	/* Round timer is drawn from CG_Draw2D after the compass so it is never
+	 * buried under the minimap. */
 
 	if( !( cg.snap->ps.pm_flags & PMF_LIMBO ) && ( cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR ) &&
 		( cgs.autoMapExpanded || ( !cgs.autoMapExpanded && ( cg.time - cgs.autoMapExpandTime < 250.f ) ) ) )
@@ -5096,6 +5087,17 @@ static void CG_Draw2D( void ) {
 
 		if ( cg_drawCompass.integer ) {
 			CG_DrawNewCompass();
+		}
+
+		/* Far-right mission / reinf countdown — after compass so it sits on top,
+		 * just below the circular minimap (ETL-style ~152). When the command map
+		 * is expanded, pin to the top edge so it stays readable over the map. */
+		if ( !cg_paused.integer && cg_drawRoundTimer.integer ) {
+			float timerY = 152.f;
+			if ( cgs.autoMapExpanded ) {
+				timerY = 4.f;
+			}
+			CG_DrawTimer( timerY );
 		}
 
 		CG_DrawObjectiveInfo();
